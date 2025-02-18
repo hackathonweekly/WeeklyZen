@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "csstools.postcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "formulahendry.auto-rename-tag",
+    "streetsidesoftware.code-spell-checker",
+    "wix.vscode-import-cost",
+    "christian-kohler.path-intellisense",
+    "yoavbls.pretty-ts-errors",
+    "meganrogge.template-string-converter",
+    "ms-ceintl.vscode-language-pack-zh-hans",
+    "eamodio.gitlens"
+  ]
+}

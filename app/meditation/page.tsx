@@ -45,7 +45,7 @@ const backgroundImages = [
 export default function MeditationPage() {
   // 添加返回首页按钮
   const BackButton = () => (
-    <Link href="/" className="absolute top-6 left-6 z-20">
+    <Link href="/" className="absolute top-6 left-6 z-50">
       <Button
         variant="ghost"
         size="icon"

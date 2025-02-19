@@ -9,6 +9,38 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 export default function IndexPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-green-50 to-green-100">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Brand */}
+            <Link href="/" className="text-lg md:text-xl font-semibold text-emerald-700 hover:text-emerald-600 transition-colors">
+              WeeklyZen.Club
+              <span className="hidden sm:inline text-emerald-600/80"> · 周周冥想小组</span>
+            </Link>
+
+            {/* Navigation */}
+            <nav className="flex items-center space-x-4 md:space-x-6">
+              <Link
+                // href="/about"
+              href="https://hackathonweekly.feishu.cn/wiki/space/7468108015674425346?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home"
+                className="text-sm md:text-base text-gray-600 hover:text-emerald-600 transition-colors"
+              >
+                关于我们
+              </Link>
+              <Link
+                href="https://hackathonweekly.feishu.cn/wiki/NyJBwc3AsiHI5Gko2Z2cTBIqnCg"
+                className="text-sm md:text-base text-gray-600 hover:text-emerald-600 transition-colors"
+              >
+                冥想入门
+              </Link>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Add padding top to account for fixed header */}
+      <div className="pt-16"></div>
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center">
         <div className="absolute inset-0 z-0">
@@ -49,8 +81,8 @@ export default function IndexPage() {
               >
                 <div className="absolute inset-0 bg-emerald-500/20 blur-2xl transform scale-150" />
                 <Link href="/meditation" className="relative z-10 inline-block w-full sm:w-auto">
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="text-base sm:text-lg w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
                   >
                     开始冥想

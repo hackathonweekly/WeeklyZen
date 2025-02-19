@@ -16,20 +16,20 @@ export default function IndexPage() {
             src="/images/boy-meditation.jpg"
             alt="冥想背景"
             fill
-            className="object-cover"
+            className="object-cover object-[70%_center] md:object-center"
             priority
           />
         </div>
-        <div className="relative z-30 text-center">
-          <div className="relative rounded-[2rem] overflow-hidden">
+        <div className="relative z-30 text-center px-4 md:px-8 w-full max-w-4xl">
+          <div className="relative rounded-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-emerald-700/20 backdrop-blur-md" />
             <div className="absolute inset-0 bg-white/5" />
-            <div className="relative z-10 p-12 text-center">
+            <div className="relative z-10 p-6 md:p-12 text-center">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="text-5xl md:text-7xl font-medium tracking-wide text-white mb-6 drop-shadow-lg"
+                className="text-3xl sm:text-4xl md:text-6xl font-medium tracking-wide text-white mb-4 md:mb-6 drop-shadow-lg leading-tight"
               >
                 开启您的冥想之旅
               </motion.h1>
@@ -37,7 +37,7 @@ export default function IndexPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-xl md:text-2xl mb-10 text-white font-medium tracking-wide drop-shadow-lg"
+                className="text-base sm:text-lg md:text-xl mb-6 md:mb-10 text-white font-medium tracking-wide drop-shadow-lg"
               >
                 让内心平静，找回生活的平衡
               </motion.p>
@@ -48,10 +48,10 @@ export default function IndexPage() {
                 className="relative"
               >
                 <div className="absolute inset-0 bg-emerald-500/20 blur-2xl transform scale-150" />
-                <Link href="/meditation" className="relative z-10 inline-block">
+                <Link href="/meditation" className="relative z-10 inline-block w-full sm:w-auto">
                   <Button 
                     size="lg" 
-                    className="text-lg px-12 py-6 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
+                    className="text-base sm:text-lg w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
                   >
                     开始冥想
                   </Button>
@@ -63,10 +63,10 @@ export default function IndexPage() {
       </section>
 
       {/* About Section */}
-      <section className="py-20 bg-gradient-to-br from-green-50 to-green-100">
+      <section className="py-12 md:py-20 bg-gradient-to-br from-green-50 to-green-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">关于冥想小组</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">关于冥想小组</h2>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             <Card className="p-6">
               <h3 className="text-xl font-semibold mb-4">每周聚会</h3>
               <p className="text-muted-foreground">我们每周举行线上冥想聚会，共同练习和分享冥想体验。</p>

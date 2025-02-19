@@ -6,120 +6,77 @@ interface SoundData {
   category: string;
   iconType: IconType;
   audioUrl: string;
+  isDefault?: boolean;
 }
 
 export const sounds: SoundData[] = [
-  // Meditation Category
+  // 自然音效
   {
-    id: 'zen-bells',
-    name: '禅铃',
-    category: 'meditation',
-    iconType: 'bells',
-    audioUrl: '/sounds/meditation/zen-bells.mp3'
+    id: 'forest-birds',
+    name: '森林鸟鸣',
+    category: '自然',
+    iconType: 'forest',
+    audioUrl: '/sounds/forest-birds.mp3',
+    isDefault: true
   },
   {
-    id: 'temple-bells',
-    name: '寺庙钟声',
-    category: 'meditation',
-    iconType: 'bells',
-    audioUrl: '/sounds/meditation/temple-bells.mp3'
+    id: 'waves',
+    name: '海浪',
+    category: '自然',
+    iconType: 'waves',
+    audioUrl: '/sounds/waves.mp3'
   },
   {
-    id: 'om-chanting',
-    name: '唵咒',
-    category: 'meditation',
-    iconType: 'om',
-    audioUrl: '/sounds/meditation/om-chanting.mp3'
+    id: 'creek',
+    name: '溪流',
+    category: '自然',
+    iconType: 'creek',
+    audioUrl: '/sounds/creek.mp3'
   },
   {
-    id: 'tibetan-bowls',
-    name: '藏碗',
-    category: 'meditation',
-    iconType: 'bowl',
-    audioUrl: '/sounds/meditation/tibetan-bowls.mp3'
+    id: 'wind',
+    name: '微风',
+    category: '自然',
+    iconType: 'wind',
+    audioUrl: '/sounds/wind.mp3'
   },
   {
-    id: 'nature-meditation',
-    name: '自然冥想',
-    category: 'meditation',
-    iconType: 'nature',
-    audioUrl: '/sounds/meditation/nature-meditation.mp3'
+    id: 'leaves-rustling',
+    name: '树叶沙沙',
+    category: '自然',
+    iconType: 'leaves',
+    audioUrl: '/sounds/leaves-rustling.mp3'
   },
   {
-    id: 'zen-flute',
-    name: '禅笛',
-    category: 'meditation',
-    iconType: 'flute',
-    audioUrl: '/sounds/meditation/zen-flute.mp3'
+    id: 'waterfall',
+    name: '瀑布',
+    category: '自然',
+    iconType: 'waterfall',
+    audioUrl: '/sounds/waterfall.mp3'
+  },
+  {
+    id: 'bonfire',
+    name: '篝火',
+    category: '自然',
+    iconType: 'fire',
+    audioUrl: '/sounds/bonfire.mp3'
+  },
+  {
+    id: 'beach',
+    name: '海滩',
+    category: '自然',
+    iconType: 'beach',
+    audioUrl: '/sounds/beach.mp3'
+  },
+  {
+    id: 'forest-night',
+    name: '夜晚森林',
+    category: '自然',
+    iconType: 'night-forest',
+    audioUrl: '/sounds/forest-night.mp3'
   },
 
-// Nature Category
-{
-  id: 'forest-birds',
-  name: '森林鸟鸣',
-  category: '自然',
-  iconType: 'forest',
-  audioUrl: '/sounds/forest-birds.mp3'
-},
-{
-  id: 'waves',
-  name: '海浪',
-  category: '自然',
-  iconType: 'waves',
-  audioUrl: '/sounds/waves.mp3'
-},
-{
-  id: 'creek',
-  name: '溪流',
-  category: '自然',
-  iconType: 'creek',
-  audioUrl: '/sounds/creek.mp3'
-},
-{
-  id: 'wind',
-  name: '微风',
-  category: '自然',
-  iconType: 'wind',
-  audioUrl: '/sounds/wind.mp3'
-},
-{
-  id: 'leaves-rustling',
-  name: '树叶沙沙',
-  category: '自然',
-  iconType: 'leaves',
-  audioUrl: '/sounds/leaves-rustling.mp3'
-},
-{
-  id: 'waterfall',
-  name: '瀑布',
-  category: '自然',
-  iconType: 'waterfall',
-  audioUrl: '/sounds/waterfall.mp3'
-},
-{
-  id: 'bonfire',
-  name: '篝火',
-  category: '自然',
-  iconType: 'fire',
-  audioUrl: '/sounds/bonfire.mp3'
-},
-{
-  id: 'beach',
-  name: '海滩',
-  category: '自然',
-  iconType: 'beach',
-  audioUrl: '/sounds/beach.mp3'
-},
-{
-  id: 'forest-night',
-  name: '夜晚森林',
-  category: '自然',
-  iconType: 'night-forest',
-  audioUrl: '/sounds/forest-night.mp3'
-},
-
-
-  // Rain Category
+  // 雨声
   {
     id: 'rain-light',
     name: '小雨',
@@ -131,7 +88,7 @@ export const sounds: SoundData[] = [
     id: 'rain-heavy',
     name: '大雨',
     category: '雨声',
-    iconType: 'rain-light',
+    iconType: 'rain-heavy',
     audioUrl: '/sounds/rain-heavy.mp3'
   },
   {
@@ -170,10 +127,7 @@ export const sounds: SoundData[] = [
     audioUrl: '/sounds/rain-puddle.mp3'
   },
 
-
-
-
-  // City Category
+  // 城市
   {
     id: 'city-traffic',
     name: '城市交通',
@@ -217,4 +171,48 @@ export const sounds: SoundData[] = [
     audioUrl: '/sounds/train.mp3'
   },
 
-];
+  // // 冥想: todo 这些音频不存在
+  // {
+  //   id: 'zen-bells',
+  //   name: '禅铃',
+  //   category: '冥想',
+  //   iconType: 'bells',
+  //   audioUrl: '/sounds/meditation/zen-bells.mp3'
+  // },
+  // {
+  //   id: 'om-chanting',
+  //   name: '唵咒',
+  //   category: '冥想',
+  //   iconType: 'om',
+  //   audioUrl: '/sounds/meditation/om-chanting.mp3'
+  // },
+  // {
+  //   id: 'tibetan-bowls',
+  //   name: '藏碗',
+  //   category: '冥想',
+  //   iconType: 'bowl',
+  //   audioUrl: '/sounds/meditation/tibetan-bowls.mp3'
+  // },
+  // {
+  //   id: 'nature-meditation',
+  //   name: '自然冥想',
+  //   category: '冥想',
+  //   iconType: 'nature',
+  //   audioUrl: '/sounds/meditation/nature-meditation.mp3'
+  // },
+  // {
+  //   id: 'zen-flute',
+  //   name: '禅笛',
+  //   category: '冥想',
+  //   iconType: 'flute',
+  //   audioUrl: '/sounds/meditation/zen-flute.mp3'
+  // },
+  // 结束声
+  {
+    id: 'temple-bells',
+    name: '寺庙钟声',
+    category: '结束声',
+    iconType: 'bells',
+    audioUrl: '/sounds/temple-bells.mp3'
+  }
+]

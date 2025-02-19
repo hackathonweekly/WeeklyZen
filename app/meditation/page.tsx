@@ -44,17 +44,37 @@ const backgroundImages = [
 
 export default function MeditationPage() {
   // 添加返回首页按钮
-  const BackButton = () => (
-    <Link href="/" className="absolute top-6 left-6 z-50">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </Button>
-    </Link>
-  )
+  const BackButton = () => {
+    const handleBack = () => {
+      // 停止音频播放
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+      // 清理定时器
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      // 重置状态
+      setIsPlaying(false)
+      // 返回首页
+      window.location.href = '/'
+    }
+
+    return (
+      <div className="absolute top-6 left-6 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
+          onClick={handleBack}
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+      </div>
+    )
+  }
   const [selectedDuration, setSelectedDuration] = useState(5)
   const [showCustomDuration, setShowCustomDuration] = useState(false)
   const [customDuration, setCustomDuration] = useState(5)
@@ -73,18 +93,15 @@ export default function MeditationPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 状态显示组件
-  const StatusDisplay = () => {
+  // 获取当前状态名称
+  const getStatusNames = () => {
     const selectedSoundName = selectedSound ? sounds.find(s => s.id === selectedSound)?.name : '无'
     const backgroundName = selectedBackground ? selectedBackground.split('/').pop()?.split('.')[0] : '渐变色'
-
-    return (
-      <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 text-white/80 text-sm space-y-2 mb-4">
-        <div>背景：{backgroundName}</div>
-        <div>音效：{selectedSoundName}</div>
-        <div>引导语：{selectedGuidance.name}</div>
-      </div>
-    )
+    return {
+      backgroundName,
+      soundName: selectedSoundName,
+      guidanceName: selectedGuidance.name
+    }
   }
 
   // 生成渐变色背景
@@ -299,8 +316,17 @@ export default function MeditationPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="fixed bottom-32 left-0 right-0 flex flex-wrap justify-center gap-3 px-4 z-20"
+                    className="fixed bottom-32 left-0 right-0 flex flex-col items-center px-4 z-20"
                   >
+                    {/* 当前状态显示 */}
+                    <div className="flex gap-4 text-xs text-white/60 mb-4">
+                      <span>背景：{getStatusNames().backgroundName}</span>
+                      <span>音效：{getStatusNames().soundName}</span>
+                      <span>引导语：{getStatusNames().guidanceName}</span>
+                    </div>
+                    
+                    {/* 时长选择按钮 */}
+                    <div className="flex flex-wrap justify-center gap-3">
                     {durations.map(duration => (
                       <Button
                         key={duration}
@@ -322,6 +348,7 @@ export default function MeditationPage() {
                     >
                       更多
                     </Button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -340,10 +367,7 @@ export default function MeditationPage() {
                   </Button>
                 </motion.div>
 
-                {/* 状态显示 */}
-                <div className="fixed bottom-48 left-1/2 -translate-x-1/2">
-                  <StatusDisplay />
-                </div>
+
 
                 {/* 音量控制 */}
                 {selectedSound && (

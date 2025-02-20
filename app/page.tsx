@@ -80,14 +80,24 @@ export default function IndexPage() {
                 className="relative"
               >
                 <div className="absolute inset-0 bg-emerald-500/20 blur-2xl transform scale-150" />
-                <Link href="/meditation" className="relative z-10 inline-block w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    className="text-base sm:text-lg w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
-                  >
-                    开始冥想
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full sm:w-auto">
+                  <Link href="/meditation" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="text-base sm:text-lg w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
+                    >
+                      开始冥想
+                    </Button>
+                  </Link>
+                  <Link href="/meditation-timer" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="text-base sm:text-lg w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-black hover:bg-gray-900 text-white transition-all duration-300 rounded-full shadow-lg hover:shadow-xl"
+                    >
+                      简洁冥想
+                    </Button>
+                  </Link>
+                </div>
               </motion.div>
             </div>
           </div>

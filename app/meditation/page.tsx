@@ -34,7 +34,7 @@ const guidances = [
 
 // 可选的冥想时长（分钟）
 // const durations = [0.0833, 5, 15, 30, 60] // 0.0833 分钟 = 5 秒 方便调试
-const durations = [5, 15, 30, 60]
+const durations = [5, 15, 30]
 
 const backgroundImages = [
   '/images/boy-meditation.jpg',
@@ -62,12 +62,20 @@ export default function MeditationPage() {
   // 添加返回首页按钮
   const BackButton = () => {
     const router = useRouter()
+    const handleBack = () => {
+      // 先停止倒计时和音频
+      cleanup()
+      setIsPlaying(false)
+      // 然后返回首页
+      router.push('/')
+    }
+
     return (
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 sm:top-6 left-4 sm:left-6 z-50 w-10 h-10 rounded-full bg-black/30 text-white transition-colors duration-200 hover:bg-black/40 active:bg-black/50"
-        onClick={() => router.push('/')}
+        className="fixed top-4 sm:top-6 left-4 sm:left-6 z-[100] w-10 h-10 rounded-full bg-black/30 text-white transition-colors duration-200 hover:bg-black/40 active:bg-black/50"
+        onClick={handleBack}
       >
         <ChevronLeft className="w-5 h-5" />
       </Button>
@@ -82,6 +90,7 @@ export default function MeditationPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   // 默认使用光环扩散效果
   const [animationType, setAnimationType] = useState(3)
+  // 控制按钮风格，1: 简约圆形, 2: 渐变光效, 3: 经典按钮
   // 设置默认音效（篝火）
   const defaultSound = sounds.find(s => s.isDefault)?.id || null
   const [selectedSound, setSelectedSound] = useState<string | null>(defaultSound)
@@ -237,32 +246,36 @@ export default function MeditationPage() {
       }
     }
 
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        if (!isMounted) return
+    const updateTimer = () => {
+      if (!isMounted) return
 
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            // 停止计时器
-            if (timerRef.current) {
-              clearInterval(timerRef.current)
-              timerRef.current = null
-            }
-            // 停止播放
-            setIsPlaying(false)
-            // 播放结束音效
-            playEndSound()
-            // 重置为上次选择的时间
-            return selectedDuration * 60
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // 停止计时器
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+            timerRef.current = null
           }
-          return prev - 1
-        })
-      }, 1000)
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+          // 停止播放
+          setIsPlaying(false)
+          // 播放结束音效
+          playEndSound()
+          // 重置为上次选择的时间
+          return selectedDuration * 60
+        }
+        return prev - 1
+      })
+    }
+
+    // 清理旧的计时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    // 创建新的计时器
+    if (isPlaying) {
+      timerRef.current = setInterval(updateTimer, 1000)
     }
 
     return () => {
@@ -290,7 +303,7 @@ export default function MeditationPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col relative transition-all duration-1000"
+      className="h-[100vh] flex flex-col relative transition-all duration-1000 touch-none select-none"
       style={{
         background: selectedBackground ? 'none' : gradient,
       }}
@@ -470,20 +483,21 @@ export default function MeditationPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="space-y-6">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <div className="mt-12 sm:mt-16 md:mt-20 space-y-8">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => {
+                    if (timerRef.current) {
+                      clearInterval(timerRef.current)
+                      timerRef.current = null
+                    }
+                    setIsPlaying(!isPlaying)
+                  }}
+                  className="min-w-[120px] bg-black/20 hover:bg-black/30 text-white/90 hover:text-white backdrop-blur-sm transition-all duration-300 active:scale-95 rounded-full px-8 border-0"
                 >
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="min-w-[120px] bg-white text-black hover:bg-white/90 backdrop-blur-sm"
-                  >
-                    {isPlaying ? '暂停' : '开始'}
-                  </Button>
-                </motion.div>
+                  {isPlaying ? '暂停' : '开始'}
+                </Button>
 
 
 

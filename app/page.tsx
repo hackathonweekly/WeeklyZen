@@ -11,165 +11,126 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useEffect, useRef } from 'react'
+import _ from 'lodash'
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from '@/components/ui/navigation-menu'
+import { cn } from '@/lib/utils'
 
-// 粒子动效组件
-const ParticleCanvas = () => {
+export default function IndexPage() {
+  // 添加canvas的ref
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const contextRef = useRef<CanvasRenderingContext2D | null>(null)
-  const particlesRef = useRef<any[]>([])
-  const animationFrameRef = useRef<number>()
 
-  // 初始化画布和粒子
+  // 添加useEffect来初始化canvas
   useEffect(() => {
-    if (!canvasRef.current) return
+    const loadCanvasScripts = async () => {
+      try {
+        // 在window上挂载lodash
+        if (typeof window !== 'undefined') {
+          window._ = _
+        }
 
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-    if (!context) return
-
-    contextRef.current = context
-
-    // 设置画布尺寸为全屏
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
-
-    // 创建粒子
-    const createParticles = () => {
-      particlesRef.current = []
-      const numberOfParticles = Math.floor(
-        (canvas.width * canvas.height) / 15000
-      )
-
-      for (let i = 0; i < numberOfParticles; i++) {
-        particlesRef.current.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          radius: Math.random() * 1 + 0.5,
-          speedX: Math.random() * 0.5 - 0.25,
-          speedY: Math.random() * 0.5 - 0.25,
-          hue: Math.random() * 60 - 30, // 色相变化范围
+        // 加载 canvasClass.js
+        const canvasClassScript = document.createElement('script')
+        canvasClassScript.src = '/canvasClass.js'
+        await new Promise((resolve, reject) => {
+          canvasClassScript.onload = resolve
+          canvasClassScript.onerror = reject
+          document.body.appendChild(canvasClassScript)
         })
+
+        // 初始化 canvas
+        if (canvasRef.current && window.DameDaneParticle) {
+          new window.DameDaneParticle(canvasRef.current, {
+            src: '/images/particle.png', // 更新图片路径
+            renderX: window.innerWidth / 2 - 450,
+            renderY: window.innerHeight / 2 - 400,
+            w: '900px',
+            size: 1,
+            spacing: 1,
+            validColor: {
+              min: 300,
+              max: 765,
+              invert: false,
+              excludeText: 'HIS BREATH',
+              solidColor: '#FFFFFF',
+            },
+            effectParticleMode: 'adsorption',
+            Thickness: 25,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load canvas:', error)
       }
     }
 
-    createParticles()
-    window.addEventListener('resize', createParticles)
-
-    // 动画循环
-    const animate = () => {
-      if (!contextRef.current) return
-
-      // 创建渐变透明效果
-      contextRef.current.fillStyle = 'rgba(0, 0, 0, 0.05)'
-      contextRef.current.fillRect(0, 0, canvas.width, canvas.height)
-
-      particlesRef.current.forEach((particle, index) => {
-        // 更新粒子位置
-        particle.x += particle.speedX
-        particle.y += particle.speedY
-
-        // 边界检查
-        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1
-        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1
-
-        // 绘制粒子
-        const baseHue = (Date.now() / 50) % 360 // 基础色相随时间变化
-        contextRef.current.beginPath()
-        contextRef.current.arc(
-          particle.x,
-          particle.y,
-          particle.radius,
-          0,
-          Math.PI * 2
-        )
-        contextRef.current.fillStyle = `hsla(${baseHue + particle.hue}, 70%, 70%, 0.8)`
-        contextRef.current.fill()
-
-        // 连接临近粒子
-        for (let j = index + 1; j < particlesRef.current.length; j++) {
-          const dx = particle.x - particlesRef.current[j].x
-          const dy = particle.y - particlesRef.current[j].y
-          const distance = Math.sqrt(dx * dx + dy * dy)
-
-          if (distance < 100) {
-            contextRef.current.beginPath()
-            contextRef.current.strokeStyle = `hsla(${baseHue + particle.hue}, 70%, 70%, ${0.2 * (1 - distance / 100)})`
-            contextRef.current.lineWidth = 0.5
-            contextRef.current.moveTo(particle.x, particle.y)
-            contextRef.current.lineTo(
-              particlesRef.current[j].x,
-              particlesRef.current[j].y
-            )
-            contextRef.current.stroke()
-          }
-        }
-      })
-
-      animationFrameRef.current = requestAnimationFrame(animate)
-    }
-
-    animate()
+    loadCanvasScripts()
 
     // 清理函数
     return () => {
-      window.removeEventListener('resize', resizeCanvas)
-      window.removeEventListener('resize', createParticles)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
+      // 移除脚本
+      const scripts = document.querySelectorAll('script')
+      scripts.forEach((script) => {
+        if (script.src.includes('canvasClass.js')) {
+          document.body.removeChild(script)
+        }
+      })
     }
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 -z-10 h-full w-full"
-      style={{ background: 'black' }}
-    />
-  )
-}
-
-export default function IndexPage() {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <ParticleCanvas />
+    <div className="flex flex-col">
       {/* Header */}
-      <header className="fixed left-0 right-0 top-0 z-50">
+      <header className="fixed left-0 right-0 top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            {/* Brand */}
             <Link
               href="/"
-              className="text-lg font-semibold text-emerald-700 transition-colors hover:text-emerald-600 md:text-xl"
+              className="text-lg font-semibold transition-colors hover:text-primary"
             >
               WeeklyZen.Club
-              <span className="hidden text-emerald-600/80 sm:inline">
+              <span className="hidden text-muted-foreground sm:inline">
                 {' '}
                 · 周周冥想小组
               </span>
             </Link>
 
-            {/* Navigation */}
-            <nav className="flex items-center space-x-4 md:space-x-6">
-              <Link
-                // href="/about"
-                href="https://hackathonweekly.feishu.cn/wiki/space/7468108015674425346?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home"
-                className="text-sm text-gray-600 transition-colors hover:text-emerald-600 md:text-base"
-              >
-                关于我们
-              </Link>
-              <Link
-                href="https://hackathonweekly.feishu.cn/wiki/NyJBwc3AsiHI5Gko2Z2cTBIqnCg"
-                className="text-sm text-gray-600 transition-colors hover:text-emerald-600 md:text-base"
-              >
-                冥想入门
-              </Link>
-            </nav>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <Link
+                    href="https://hackathonweekly.feishu.cn/wiki/space/7468108015674425346?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home"
+                    legacyBehavior
+                    passHref
+                  >
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      关于我们
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link
+                    href="https://hackathonweekly.feishu.cn/wiki/NyJBwc3AsiHI5Gko2Z2cTBIqnCg"
+                    legacyBehavior
+                    passHref
+                  >
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      冥想入门
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
         </div>
       </header>
@@ -178,63 +139,24 @@ export default function IndexPage() {
       <div className="pt-16"></div>
       {/* Hero Section */}
       <section className="relative flex h-screen items-center justify-center">
-        <ParticleCanvas />
-        {/* <div className="absolute inset-0 z-0">
-          <Image
-            src="/images/boy-meditation.jpg"
-            alt="冥想背景"
-            fill
-            className="object-cover object-[70%_center] md:object-center"
-            priority
+        <div className="container">
+          <canvas
+            ref={canvasRef}
+            id="akCanvas"
+            style={{
+              position: 'absolute',
+              height: '100vh',
+              width: '100%',
+              top: 0,
+              left: 0,
+              zIndex: 20,
+            }}
           />
-        </div> */}
-        <div className="relative z-30 w-full max-w-4xl px-4 text-center md:px-8">
-          <div className="relative overflow-hidden rounded-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br backdrop-blur-md" />
-            <div className="absolute inset-0" />
-            <div className="relative z-10 p-6 text-center md:p-12">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="mb-4 text-3xl font-medium leading-tight tracking-wide text-white drop-shadow-lg sm:text-4xl md:mb-6 md:text-6xl"
-              >
-                开启您的冥想之旅
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="mb-6 text-base font-medium tracking-wide text-white drop-shadow-lg sm:text-lg md:mb-10 md:text-xl"
-              >
-                让内心平静，找回生活的平衡
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="relative"
-              >
-                <Link
-                  href="/meditation"
-                  className="relative z-10 inline-block w-full sm:w-auto"
-                >
-                  <Button
-                    variant="default"
-                    size="lg"
-                    className="w-full rounded-full  px-8 py-4 text-base   shadow-lg transition-all duration-300 hover:bg-emerald-700 hover:shadow-xl sm:w-auto sm:px-12 sm:py-6 sm:text-lg"
-                  >
-                    开始冥想
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
-          </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section className="bg-gradient-to-br from-green-50 to-green-100 py-12 md:py-20">
+      <section className="py-12 md:py-20">
         <div className="container mx-auto px-4">
           <h2 className="mb-8 text-center text-2xl font-bold md:mb-12 md:text-3xl">
             关于冥想小组
@@ -263,7 +185,7 @@ export default function IndexPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="bg-gradient-to-br from-green-100 to-green-50 py-20">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold">常见问题</h2>
           <Accordion type="single" collapsible className="mx-auto max-w-2xl">
@@ -290,7 +212,7 @@ export default function IndexPage() {
       </section>
 
       {/* Join Us Section */}
-      <section className="bg-gradient-to-br from-green-50 to-green-100 py-20">
+      <section className="py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="mb-8 text-3xl font-bold">加入我们</h2>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">

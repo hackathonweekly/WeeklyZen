@@ -50,21 +50,21 @@ export default function MeditationTimer() {
   // 处理鼠标拖动选择时间
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging || isRunning) return;
-    
+
     const rect = e.currentTarget.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     const mouseX = e.clientX - centerX;
     const mouseY = e.clientY - centerY;
-    
+
     // 计算角度
     let angle = Math.atan2(mouseY, mouseX) * (180 / Math.PI);
     if (angle < 0) angle += 360;
-    
+
     // 将角度对齐刻度，顺时针方向
     const snapAngle = (Math.round(angle / 15) * 15 - 90) % 360;
     setAngle(snapAngle);
-    
+
     // 设置时间
     const newTime = getTimeFromAngle(snapAngle);
     setSelectedDuration(newTime);
@@ -111,7 +111,7 @@ export default function MeditationTimer() {
 
       {/* Header */}
       <div className="flex justify-between items-center mt-2">
-        <button 
+        <button
           onClick={() => router.push('/')}
           className="text-lg font-light flex items-center gap-2 hover:text-gray-300 transition-colors"
         >
@@ -124,7 +124,7 @@ export default function MeditationTimer() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center -mt-20">
         {/* Main Circle */}
-        <div 
+        <div
           className="relative w-80 h-80 flex items-center justify-center mb-12"
           onMouseDown={() => !isRunning && setIsDragging(true)}
           onMouseUp={() => setIsDragging(false)}
@@ -138,17 +138,17 @@ export default function MeditationTimer() {
               // 计算每个圈的大小和透明度
               const baseScale = 0.3 + (i * 0.1); // 从0.3到0.8
               const opacityBase = 0.8 - (i * 0.1); // 从0.8到0.3
-              
+
               return (
                 <motion.div
                   key={`circle-${i}`}
                   className="absolute w-full h-full rounded-full border-2 border-white/60"
-                  initial={{ 
+                  initial={{
                     scale: baseScale,
                     opacity: opacityBase * 0.5 // 静止状态下的透明度
                   }}
                   animate={{
-                    scale: isRunning 
+                    scale: isRunning
                       ? [baseScale, baseScale + 0.15, baseScale]
                       : baseScale,
                     opacity: isRunning
@@ -186,7 +186,7 @@ export default function MeditationTimer() {
               {/* Clock Hand */}
               <motion.div
                 className="absolute top-1/2 left-1/2 w-1 h-32 bg-white/50 origin-top rounded-full"
-                style={{ 
+                style={{
                   transform: `translate(-50%, 0) rotate(${angle}deg)`,
                 }}
                 animate={{ opacity: isDragging ? 0.8 : 0.5 }}
@@ -194,7 +194,7 @@ export default function MeditationTimer() {
               />
             </>
           )}
-          
+
           {/* Center Text */}
           <div className="text-center z-10">
             {isRunning ? (
@@ -211,7 +211,7 @@ export default function MeditationTimer() {
 
         {/* Controls */}
         <div className="flex flex-col items-center gap-8">
-          <button 
+          <button
             className={`px-12 py-3 rounded-full text-lg font-medium transition-all ${isRunning
               ? 'border-2 border-white/30 text-white hover:bg-white/10'
               : 'bg-white text-black hover:bg-gray-200'}`}

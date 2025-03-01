@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
@@ -34,7 +34,7 @@ const guidances = [
 
 // 可选的冥想时长（分钟）
 // const durations = [0.0833, 5, 15, 30, 60] // 0.0833 分钟 = 5 秒 方便调试
-const durations = [5, 15, 30, 60]
+const durations = [5, 15, 30]
 
 const backgroundImages = [
   '/images/boy-meditation.jpg',
@@ -43,45 +43,54 @@ const backgroundImages = [
 ]
 
 export default function MeditationPage() {
+  // 清理资源的函数
+  const cleanup = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    if (endSoundRef.current) {
+      endSoundRef.current.pause()
+      endSoundRef.current = null
+    }
+  }
+
   // 添加返回首页按钮
   const BackButton = () => {
+    const router = useRouter()
     const handleBack = () => {
-      // 停止音频播放
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
-      }
-      // 清理定时器
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-      // 重置状态
+      // 先停止倒计时和音频
+      cleanup()
       setIsPlaying(false)
-      // 返回首页
-      window.location.href = '/'
+      // 然后返回首页
+      router.push('/')
     }
 
     return (
-      <div className="absolute top-6 left-6 z-50">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
-          onClick={handleBack}
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 sm:top-6 left-4 sm:left-6 z-[100] w-10 h-10 rounded-full bg-black/30 text-white transition-colors duration-200 hover:bg-black/40 active:bg-black/50"
+        onClick={handleBack}
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </Button>
     )
   }
   const [selectedDuration, setSelectedDuration] = useState(5)
   const [showCustomDuration, setShowCustomDuration] = useState(false)
   const [customDuration, setCustomDuration] = useState(5)
-  const [showGuidance, setShowGuidance] = useState(true)
+  const [showGuidance, setShowGuidance] = useState(false)
   const endSoundRef = useRef<HTMLAudioElement | null>(null)
   const [timeLeft, setTimeLeft] = useState(5 * 60)
   const [isPlaying, setIsPlaying] = useState(false)
+  // 默认使用光环扩散效果
+  const [animationType, setAnimationType] = useState(3)
+  // 控制按钮风格，1: 简约圆形, 2: 渐变光效, 3: 经典按钮
   // 设置默认音效（篝火）
   const defaultSound = sounds.find(s => s.isDefault)?.id || null
   const [selectedSound, setSelectedSound] = useState<string | null>(defaultSound)
@@ -129,13 +138,36 @@ export default function MeditationPage() {
     if (selectedSound) {
       const sound = sounds.find(s => s.id === selectedSound)
       if (sound) {
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current = null
+        }
         const audio = new Audio(sound.audioUrl)
         audio.loop = true
         audio.volume = volume / 100
         audioRef.current = audio
+        if (isPlaying) {
+          const playPromise = audio.play()
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.log('音频播放失败:', error)
+            })
+          }
+        }
+      }
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
       }
     }
-  }, [selectedSound])
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [selectedSound, volume, isPlaying])
 
   // 处理音量变化
   useEffect(() => {
@@ -146,72 +178,114 @@ export default function MeditationPage() {
 
   // 处理播放状态
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        const playPromise = audioRef.current.play()
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.log('音频播放失败:', error)
-          })
+    const handleAudioPlay = async () => {
+      if (!audioRef.current) return
+
+      try {
+        if (isPlaying) {
+          // 先设置音量，避免突然的声音
+          audioRef.current.volume = volume / 100
+          const playPromise = audioRef.current.play()
+          if (playPromise !== undefined) {
+            await playPromise
+          }
+        } else {
+          audioRef.current.pause()
         }
-      } else {
-        audioRef.current.pause()
+      } catch (error) {
+        console.error('音频播放出错:', error)
+        // 如果播放失败，重置播放状态
+        setIsPlaying(false)
       }
     }
-  }, [isPlaying])
 
-  // 处理计时器
-  // 初始化结束音效
+    handleAudioPlay()
+  }, [isPlaying, volume])
+
+  // 初始化和处理结束音效
   useEffect(() => {
-    const audio = new Audio('/sounds/temple-bells.mp3')
-    audio.volume = volume / 100
-    endSoundRef.current = audio
-
-    // 监听音量变化
+    // 如果已经有音效，只更新音量
     if (endSoundRef.current) {
       endSoundRef.current.volume = volume / 100
+      return
+    }
+
+    // 初始化结束音效
+    const audio = new Audio('/sounds/temple-bells.mp3')
+    audio.volume = volume / 100
+    // 预加载音频
+    audio.load()
+    endSoundRef.current = audio
+
+    // 组件卸载时清理
+    return () => {
+      if (endSoundRef.current) {
+        endSoundRef.current.pause()
+        endSoundRef.current = null
+      }
     }
   }, [volume])
 
+  // 处理计时器和结束音效
   useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            setIsPlaying(false)
-            clearInterval(timerRef.current!)
-            // 重置为上次选择的时间
-            setTimeLeft(selectedDuration * 60)
-            // 播放结束音效
-            if (endSoundRef.current) {
-              // 重置音频时间并重新加载
-              endSoundRef.current.currentTime = 0
-              endSoundRef.current.load()
-              // 设置音量并播放
-              endSoundRef.current.volume = volume / 100
-              const playPromise = endSoundRef.current.play()
-              if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                  console.log('音效播放失败:', error)
-                })
-              }
-            }
-            return selectedDuration * 60
+    let isMounted = true
+
+    const playEndSound = async () => {
+      if (!endSoundRef.current) return
+
+      try {
+        // 重置音频时间并重新加载
+        endSoundRef.current.currentTime = 0
+        endSoundRef.current.volume = volume / 100
+        const playPromise = endSoundRef.current.play()
+        if (playPromise !== undefined) {
+          await playPromise
+        }
+      } catch (error) {
+        console.error('结束音效播放失败:', error)
+      }
+    }
+
+    const updateTimer = () => {
+      if (!isMounted) return
+
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // 停止计时器
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+            timerRef.current = null
           }
-          return prev - 1
-        })
-      }, 1000)
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
+          // 停止播放
+          setIsPlaying(false)
+          // 播放结束音效
+          playEndSound()
+          // 重置为上次选择的时间
+          return selectedDuration * 60
+        }
+        return prev - 1
+      })
     }
+
+    // 清理旧的计时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    // 创建新的计时器
+    if (isPlaying) {
+      timerRef.current = setInterval(updateTimer, 1000)
+    }
+
     return () => {
+      isMounted = false
       if (timerRef.current) {
         clearInterval(timerRef.current)
+        timerRef.current = null
       }
     }
-  }, [isPlaying])
+  }, [isPlaying, selectedDuration, volume])
 
   // 格式化时间
   const formatTime = (seconds: number) => {
@@ -229,7 +303,7 @@ export default function MeditationPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col relative transition-all duration-1000"
+      className="h-[100vh] flex flex-col relative transition-all duration-1000 touch-none select-none"
       style={{
         background: selectedBackground ? 'none' : gradient,
       }}
@@ -243,12 +317,15 @@ export default function MeditationPage() {
             alt="冥想背景"
             fill
             className="object-cover"
+            priority
+            sizes="100vw"
+            quality={90}
           />
         </div>
       )}
 
       {/* 引导语 */}
-      <div className="fixed top-20 md:top-8 left-0 right-0 z-30">
+      <div className="fixed top-16 sm:top-20 md:top-8 left-0 right-0 z-30">
         <div className="relative w-full max-w-2xl mx-auto px-4">
           <AnimatePresence initial={false}>
             {showGuidance ? (
@@ -257,9 +334,9 @@ export default function MeditationPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="bg-black/20 backdrop-blur-sm rounded-lg p-4"
+                className="bg-black/20 backdrop-blur-sm rounded-lg p-3 sm:p-4"
               >
-                <p className="text-white/80 text-sm md:text-base">
+                <p className="text-white/80 text-sm sm:text-base leading-relaxed">
                   {selectedGuidance.content}
                 </p>
                 <div className="flex justify-end mt-2">
@@ -267,7 +344,7 @@ export default function MeditationPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowGuidance(false)}
-                    className="text-white/60 hover:text-white hover:bg-white/10"
+                    className="text-white/60 hover:text-white hover:bg-white/10 text-xs sm:text-sm"
                   >
                     隐藏引导语
                   </Button>
@@ -284,7 +361,7 @@ export default function MeditationPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowGuidance(true)}
-                  className="text-white/60 hover:text-white hover:bg-white/10"
+                  className="text-white/60 hover:text-white hover:bg-white/10 text-xs sm:text-sm"
                 >
                   显示引导语
                 </Button>
@@ -296,11 +373,63 @@ export default function MeditationPage() {
 
       <div className="flex-grow flex flex-col justify-center relative z-10 w-full max-w-4xl mx-auto px-4 py-8 md:py-0">
         {/* 圆形计时器 */}
-        <div className="relative w-[20rem] h-[20rem] md:w-[32rem] md:h-[32rem] mx-auto mb-8 md:mb-12">
-          <div className="absolute inset-4 rounded-full bg-black/40 backdrop-blur-lg shadow-2xl" />
+        <div className="relative w-[16rem] h-[16rem] sm:w-[20rem] sm:h-[20rem] md:w-[28rem] md:h-[28rem] mx-auto mb-6 sm:mb-8 md:mb-12">
+          {/* 光环扩散效果 - 主圆圈 */}
+          <motion.div
+            className="absolute inset-4 rounded-full bg-black/30 backdrop-blur-lg shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+            initial={false}
+            animate={isPlaying ? {
+              scale: [1, 1.04, 1],
+              opacity: [0.4, 0.6, 0.4],
+              boxShadow: [
+                "0 0 30px rgba(255,255,255,0.2)",
+                "0 0 60px rgba(255,255,255,0.4)",
+                "0 0 30px rgba(255,255,255,0.2)"
+              ]
+            } : {
+              scale: 1,
+              opacity: 0.4,
+              boxShadow: "0 0 30px rgba(255,255,255,0.2)"
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          {/* 外层光环1 */}
+          <motion.div
+            className="absolute inset-4 rounded-full bg-white/10"
+            initial={false}
+            animate={isPlaying ? {
+              scale: [1.1, 1.4, 1.1],
+              opacity: [0.15, 0, 0.15]
+            } : { scale: 1.1, opacity: 0 }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          {/* 外层光环2 - 错开时间 */}
+          <motion.div
+            className="absolute inset-4 rounded-full bg-white/5"
+            initial={false}
+            animate={isPlaying ? {
+              scale: [1.2, 1.5, 1.2],
+              opacity: [0.1, 0, 0.1]
+            } : { scale: 1.2, opacity: 0 }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2
+            }}
+          />
+
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.h1
-              className="text-5xl md:text-7xl font-extralight tracking-[0.2em] text-white drop-shadow-lg"
+              className="text-4xl sm:text-5xl md:text-7xl font-extralight tracking-[0.2em] text-white drop-shadow-lg select-none"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
@@ -308,6 +437,8 @@ export default function MeditationPage() {
               {formatTime(timeLeft)}
             </motion.h1>
           </div>
+
+
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
             <div className="mt-24 md:mt-40">
               <AnimatePresence>
@@ -324,7 +455,7 @@ export default function MeditationPage() {
                       <span>音效：{getStatusNames().soundName}</span>
                       <span>引导语：{getStatusNames().guidanceName}</span>
                     </div>
-                    
+
                     {/* 时长选择按钮 */}
                     <div className="flex flex-wrap justify-center gap-3">
                     {durations.map(duration => (
@@ -352,20 +483,21 @@ export default function MeditationPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="space-y-6">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <div className="mt-12 sm:mt-16 md:mt-20 space-y-8">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => {
+                    if (timerRef.current) {
+                      clearInterval(timerRef.current)
+                      timerRef.current = null
+                    }
+                    setIsPlaying(!isPlaying)
+                  }}
+                  className="min-w-[120px] bg-black/20 hover:bg-black/30 text-white/90 hover:text-white backdrop-blur-sm transition-all duration-300 active:scale-95 rounded-full px-8 border-0"
                 >
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="min-w-[120px] bg-white text-black hover:bg-white/90 backdrop-blur-sm"
-                  >
-                    {isPlaying ? '暂停' : '开始'}
-                  </Button>
-                </motion.div>
+                  {isPlaying ? '暂停' : '开始'}
+                </Button>
 
 
 
@@ -456,16 +588,16 @@ export default function MeditationPage() {
         </div>
 
         {/* 控制面板 */}
-        <div className="fixed bottom-6 left-0 right-0 flex justify-center gap-6">
+        <div className="fixed bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-3 sm:gap-6 px-4">
           {/* 背景选择 */}
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                size="lg"
+                size="icon"
                 className="w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
               >
-                <ImageIcon className="w-6 h-6" />
+                <ImageIcon className="w-5 h-5" />
               </Button>
             </DialogTrigger>
             <DialogPortal>
@@ -473,15 +605,15 @@ export default function MeditationPage() {
                 className="fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto max-w-[425px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-black/20 backdrop-blur-xl border-white/10 p-4 md:p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl md:rounded-2xl"
               >
               <DialogHeader>
-                <DialogTitle className="text-white">选择背景</DialogTitle>
-                <DialogDescription className="text-white/80">
+                <DialogTitle className="text-white text-lg">选择背景</DialogTitle>
+                <DialogDescription className="text-white/80 text-sm">
                   选择一个静态背景图片或使用动态渐变色
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col md:grid md:grid-cols-2 gap-3 mt-4">
+              <div className="grid grid-cols-2 gap-3 mt-4">
                 <Button
                   variant="ghost"
-                  className={`h-auto py-4 text-white hover:text-white hover:bg-white/20 ${!selectedBackground ? 'bg-white/20' : ''}`}
+                  className={`h-auto py-3 text-sm text-white hover:text-white hover:bg-white/20 ${!selectedBackground ? 'bg-white/20' : ''}`}
                   onClick={() => setSelectedBackground(null)}
                 >
                   渐变色
@@ -490,7 +622,7 @@ export default function MeditationPage() {
                   <Button
                     key={img}
                     variant="ghost"
-                    className={`h-auto py-4 text-white hover:text-white hover:bg-white/20 ${selectedBackground === img ? 'bg-white/20' : ''}`}
+                    className={`h-auto py-3 text-sm text-white hover:text-white hover:bg-white/20 ${selectedBackground === img ? 'bg-white/20' : ''}`}
                     onClick={() => setSelectedBackground(img)}
                   >
                     {img.split('/').pop()?.split('.')[0]}
@@ -510,10 +642,10 @@ export default function MeditationPage() {
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                size="lg"
+                size="icon"
                 className="w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
               >
-                <Music2 className="w-6 h-6" />
+                <Music2 className="w-5 h-5" />
               </Button>
             </DialogTrigger>
             <DialogPortal>
@@ -534,7 +666,7 @@ export default function MeditationPage() {
                       <TabsTrigger
                         key={category}
                         value={category}
-                        className="px-3 py-1.5 text-sm"
+                        className="px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5 flex-1"
                       >
                         {category}
                       </TabsTrigger>
@@ -552,7 +684,7 @@ export default function MeditationPage() {
                             <Button
                               key={sound.id}
                               variant="ghost"
-                              className={`h-auto py-4 text-white hover:text-white hover:bg-white/20 ${selectedSound === sound.id ? 'bg-white/20' : ''}`}
+                              className={`h-auto py-3 text-sm text-white hover:text-white hover:bg-white/20 ${selectedSound === sound.id ? 'bg-white/20' : ''}`}
                               onClick={() => setSelectedSound(sound.id)}
                             >
                               {sound.name}
@@ -578,10 +710,10 @@ export default function MeditationPage() {
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                size="lg"
+                size="icon"
                 className="w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white"
               >
-                <BookOpen className="w-6 h-6" />
+                <BookOpen className="w-5 h-5" />
               </Button>
             </DialogTrigger>
             <DialogPortal>

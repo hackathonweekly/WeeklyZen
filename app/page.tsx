@@ -136,7 +136,8 @@ export default function IndexPage() {
       </header>
 
       {/* Add padding top to account for fixed header */}
-      <div className="pt-16"></div>
+      <div className="pt-14 md:pt-16"></div>
+
       {/* Hero Section */}
       <section className="relative flex h-screen items-center justify-center">
         <div className="container">
@@ -190,20 +191,26 @@ export default function IndexPage() {
           <h2 className="mb-12 text-center text-3xl font-bold">常见问题</h2>
           <Accordion type="single" collapsible className="mx-auto max-w-2xl">
             <AccordionItem value="item-1">
-              <AccordionTrigger>冥想对初学者来说难吗？</AccordionTrigger>
-              <AccordionContent>
+              <AccordionTrigger className="text-sm md:text-base">
+                冥想对初学者来说难吗？
+              </AccordionTrigger>
+              <AccordionContent className="text-sm md:text-base">
                 不会很难。我们为初学者准备了简单的引导冥想，通过循序渐进的方式帮助您掌握基本技巧。
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-              <AccordionTrigger>每天需要冥想多长时间？</AccordionTrigger>
-              <AccordionContent>
+              <AccordionTrigger className="text-sm md:text-base">
+                每天需要冥想多长时间？
+              </AccordionTrigger>
+              <AccordionContent className="text-sm md:text-base">
                 建议初学者从每天5-10分钟开始，随着练习逐渐增加时间。关键是保持规律性，而不是时间长短。
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
-              <AccordionTrigger>如何加入冥想小组？</AccordionTrigger>
-              <AccordionContent>
+              <AccordionTrigger className="text-sm md:text-base">
+                如何加入冥想小组？
+              </AccordionTrigger>
+              <AccordionContent className="text-sm md:text-base">
                 您可以通过网站报名参加我们的线上活动，或者关注我们的社交媒体获取最新活动信息。
               </AccordionContent>
             </AccordionItem>

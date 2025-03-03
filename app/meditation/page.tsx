@@ -19,6 +19,11 @@ import { sounds } from '../sounds'
 // 引导语内容
 const guidances = [
   {
+    id: 'none',
+    name: '无引导语',
+    content: '您选择了无引导语模式，专注于自己的呼吸和感受，享受宁静的冥想时光...'
+  },
+  {
     id: 'beginner',
     name: '冥想入门',
     content: '请找一个安静的地方坐下，保持背部挺直，双手自然放在膝盖上。闭上眼睛，深呼吸几次...'
@@ -665,8 +670,8 @@ export default function MeditationPage() {
     midSoundPlayedRef.current = false
     audioPositionRef.current = {start: 0, mid: 0, end: 0}
     
-    // 只有当总时间足够长（大于50秒）时才设置开始引导音效
-    if (duration * 60 > 50 && autoStart) {
+    // 只有当总时间足够长（大于50秒）且选择的是"观察呼吸"引导语时才设置开始引导音效
+    if (duration * 60 > 50 && autoStart && selectedGuidance.id === 'breath') {
       setGuideState('start')
     }
     
@@ -987,11 +992,11 @@ export default function MeditationPage() {
                       setIsPlaying(false)
                     } else if (!isPlaying) {
                       // 如果是从暂停状态变为播放状态
-                      // 如果是刚开始计时且时间足够长（大于50秒），播放开始引导音效
+                      // 如果是刚开始计时且时间足够长（大于50秒）且选择的是"观察呼吸"引导语，播放开始引导音效
                       const totalTime = selectedDuration * 60
                       const elapsedTime = totalTime - timeLeft
                       
-                      if (elapsedTime < 1 && totalTime > 50) {
+                      if (elapsedTime < 1 && totalTime > 50 && selectedGuidance.id === 'breath') {
                         setGuideState('start')
                       }
                       
@@ -1191,47 +1196,77 @@ export default function MeditationPage() {
               <DialogPrimitive.Content
                 className="fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-[425px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-black/20 backdrop-blur-xl border-white/10 p-4 md:p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl md:rounded-2xl"
               >
-              <DialogHeader>
-                <DialogTitle className="text-white">引导语</DialogTitle>
-                <DialogDescription className="text-white/80">
-                  选择一个引导语来帮助您进入冥想状态
-                </DialogDescription>
-              </DialogHeader>
-              <Tabs
-                defaultValue={guidances[0].id}
-                className="mt-4"
-                onValueChange={(value) => {
-                  const guidance = guidances.find(g => g.id === value)
-                  if (guidance) setSelectedGuidance(guidance)
-                }}
-              >
-                <TabsList className="w-full bg-white/10 h-auto flex flex-col sm:flex-row gap-1 p-1">
+                <DialogHeader>
+                  <DialogTitle className="text-white">引导语</DialogTitle>
+                  <DialogDescription className="text-white/80">
+                    选择一个引导语来帮助您进入冥想状态
+                  </DialogDescription>
+                </DialogHeader>
+                <Tabs
+                  defaultValue={guidances[0].id}
+                  className="mt-4"
+                  onValueChange={(value) => {
+                    const guidance = guidances.find(g => g.id === value)
+                    if (guidance) {
+                      setSelectedGuidance(guidance)
+                      
+                      // 如果选择的是"观察呼吸"，自动重置计时器并开始播放
+                      if (guidance.id === 'breath') {
+                        // 首先停止所有正在播放的音频
+                        if (isPlaying) {
+                          if (timerRef.current) {
+                            clearInterval(timerRef.current)
+                            timerRef.current = null
+                          }
+                          setIsPlaying(false);
+                        }
+                        if (isPlayingEndSound) {
+                          stopEndSound();
+                        }
+                        
+                        // 重置计时器，并自动开始（传入true表示自动开始）
+                        // 重置为当前已选择的时长
+                        resetTimer(selectedDuration, true);
+                        
+                        // 自动关闭对话框
+                        const closeButton = document.querySelector('[aria-label="关闭"]') as HTMLButtonElement | null;
+                        if (closeButton) {
+                          closeButton.click();
+                        }
+                      } else if (guidance.id !== 'breath' && guideState === 'start') {
+                        // 如果不是选择"观察呼吸"，但当前处于开始引导状态，则取消引导状态
+                        setGuideState('none')
+                      }
+                    }
+                  }}
+                >
+                  <TabsList className="w-full bg-white/10 h-auto flex flex-col sm:flex-row gap-1 p-1">
+                    {guidances.map(guidance => (
+                      <TabsTrigger
+                        key={guidance.id}
+                        value={guidance.id}
+                        className="flex-1 px-3 py-1.5 text-sm"
+                      >
+                        {guidance.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
                   {guidances.map(guidance => (
-                    <TabsTrigger
-                      key={guidance.id}
-                      value={guidance.id}
-                      className="flex-1 px-3 py-1.5 text-sm"
-                    >
-                      {guidance.name}
-                    </TabsTrigger>
+                    <TabsContent key={guidance.id} value={guidance.id}>
+                      <p className="text-white/80 leading-relaxed">
+                        {guidance.content}
+                      </p>
+                    </TabsContent>
                   ))}
-                </TabsList>
-                {guidances.map(guidance => (
-                  <TabsContent key={guidance.id} value={guidance.id}>
-                    <p className="text-white/80 leading-relaxed">
-                      {guidance.content}
-                    </p>
-                  </TabsContent>
-                ))}
-              </Tabs>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCustomTTS(true)}
-                className="text-white hover:text-white hover:bg-white/20 backdrop-blur-sm"
-              >
-                自定义引导语
-              </Button>
+                </Tabs>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCustomTTS(true)}
+                  className="text-white hover:text-white hover:bg-white/20 backdrop-blur-sm"
+                >
+                  自定义引导语
+                </Button>
                 <DialogPrimitive.Close className="absolute right-2 md:right-4 top-2 md:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                   <X className="h-4 w-4 text-white" />
                   <span className="sr-only">关闭</span>

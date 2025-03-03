@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 // import { SiteHeader } from "@/components/site-header"
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { ThemeProvider } from '@/components/theme-provider'
+import { LanguageProvider } from '@/contexts/language-context'
 
 export const viewport: Viewport = {
   themeColor: [
@@ -33,7 +34,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="zh-CN" suppressHydrationWarning>
         <head />
         <body
           className={cn(
@@ -41,13 +42,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
             fontSans.variable
           )}
         >
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <div className="relative flex min-h-screen flex-col">
-              {/* SiteHeader Example, you can remove it.  */}
-              {/* <SiteHeader /> */}
-              <div className="flex-1">{children}</div>
-            </div>
-            <TailwindIndicator />
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <LanguageProvider>
+              <div className="relative flex min-h-screen flex-col">
+                {/* SiteHeader Example, you can remove it.  */}
+                {/* <SiteHeader /> */}
+                <div className="flex-1">{children}</div>
+              </div>
+              <TailwindIndicator />
+            </LanguageProvider>
           </ThemeProvider>
         </body>
       </html>

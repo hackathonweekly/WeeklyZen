@@ -1,48 +1,29 @@
 import Link from 'next/link'
 
 import { siteConfig } from '@/config/site'
-import { buttonVariants } from '@/components/ui/button'
-import { Icons } from '@/components/icons'
 import { MainNav } from '@/components/main-nav'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { LanguageSwitch } from '@/components/language-switch'
+import { cn } from '@/lib/utils'
 
-export function SiteHeader() {
+// 添加scrolled属性接口
+interface SiteHeaderProps {
+  scrolled?: boolean;
+}
+
+export function SiteHeader({ scrolled = false }: SiteHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+    <header className={cn(
+      "fixed top-0 z-40 w-full border-b transition-all duration-300",
+      scrolled 
+        ? "border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" 
+        : "border-transparent bg-transparent"
+    )}>
+      <div className="container flex h-16 max-w-screen-2xl items-center">
         <MainNav items={siteConfig.mainNav} />
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <nav className="flex items-center space-x-1">
-            <Link
-              href={siteConfig.links.github}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div
-                className={buttonVariants({
-                  size: 'icon',
-                  variant: 'ghost',
-                })}
-              >
-                <Icons.gitHub className="h-5 w-5" />
-                <span className="sr-only">GitHub</span>
-              </div>
-            </Link>
-            <Link
-              href={siteConfig.links.twitter}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div
-                className={buttonVariants({
-                  size: 'icon',
-                  variant: 'ghost',
-                })}
-              >
-                <Icons.twitter className="size-5" />
-                <span className="sr-only">Twitter</span>
-              </div>
-            </Link>
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          <nav className="flex items-center space-x-3">
+            <LanguageSwitch />
             <ThemeToggle />
           </nav>
         </div>

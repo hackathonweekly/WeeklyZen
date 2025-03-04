@@ -16,15 +16,21 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { sounds } from '../sounds'
 
+
 // 引导语内容
 const guidances = [
   {
-    id: 'beginner',
+    id: 'none',
+    name: '无引导语',
+    content: '您选择了无引导语模式，专注于自己的呼吸和感受，享受宁静的冥想时光...'
+  },
+  {
+    id: 'primer',
     name: '冥想入门',
     content: '请找一个安静的地方坐下，保持背部挺直，双手自然放在膝盖上。闭上眼睛，深呼吸几次...'
   },
   {
-    id: 'breath',
+    id: 'breathe',
     name: '观察呼吸',
     content: '将注意力集中在呼吸上，感受空气进入身体，然后缓缓呼出...'
   },
@@ -139,6 +145,8 @@ export default function MeditationPage() {
   const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([])
   // 添加是否正在播放结束音频的状态
   const [isPlayingEndSound, setIsPlayingEndSound] = useState(false)
+  const [guidanceFullText, setGuidanceFullText] = useState('')
+  const [showFullTextDialog, setShowFullTextDialog] = useState(false)
 
   // 停止结束音效播放
   const stopEndSound = () => {
@@ -293,7 +301,7 @@ export default function MeditationPage() {
     }
 
     // 初始化开始音效
-    const audio = new Audio('/ai-sounds/start.mp3')
+    const audio = new Audio(`/ai-sounds/start_${selectedGuidance.id === 'none' ? 'breathe' : selectedGuidance.id}.mp3`)
     audio.volume = volume / 100
     // 预加载音频
     audio.load()
@@ -306,7 +314,7 @@ export default function MeditationPage() {
         startSoundRef.current = null
       }
     }
-  }, [volume])
+  }, [volume, selectedGuidance])
 
   // 初始化中间音效
   useEffect(() => {
@@ -317,7 +325,7 @@ export default function MeditationPage() {
     }
 
     // 初始化中间音效
-    const audio = new Audio('/ai-sounds/mid.mp3')
+    const audio = new Audio(`/ai-sounds/mid_${selectedGuidance.id === 'none' ? 'breathe' : selectedGuidance.id}.mp3`)
     audio.volume = volume / 100
     // 预加载音频
     audio.load()
@@ -330,7 +338,7 @@ export default function MeditationPage() {
         midSoundRef.current = null
       }
     }
-  }, [volume])
+  }, [volume, selectedGuidance])
 
   // 处理开始音效播放
   useEffect(() => {
@@ -436,8 +444,10 @@ export default function MeditationPage() {
           await audioContextRef.current.resume()
         }
 
-        // 设置引导状态为end
-        setGuideState('end')
+        // 只有在时间至少10分钟且不是"无引导语"时才设置引导状态为end
+        if (selectedDuration >= 10 && selectedGuidance.id !== 'none') {
+          setGuideState('end')
+        }
         
         // 获取当前音频上下文时间
         const currentTime = audioContextRef.current.currentTime
@@ -507,8 +517,8 @@ export default function MeditationPage() {
         const totalTime = selectedDuration * 60
         const elapsedTime = totalTime - prev
         
-        // 如果时间超过50秒，并且到达一半时间点，播放中间音效
-        if (totalTime > 50 && !midSoundPlayedRef.current && elapsedTime >= totalTime / 2 - 1 && elapsedTime <= totalTime / 2 + 1) {
+        // 如果时间至少10分钟，且不是"无引导语"，并且到达一半时间点，播放中间音效
+        if (selectedDuration >= 10 && selectedGuidance.id !== 'none' && !midSoundPlayedRef.current && elapsedTime >= totalTime / 2 - 1 && elapsedTime <= totalTime / 2 + 1) {
           midSoundPlayedRef.current = true
           setGuideState('mid')
         }
@@ -550,22 +560,12 @@ export default function MeditationPage() {
     }
   }, [isPlaying, selectedDuration, volume])
 
-  // 加载音频缓冲区
-  useEffect(() => {
-    // 创建音频上下文
-    if (!audioContextRef.current) {
-      try {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      } catch (error) {
-        console.error('创建音频上下文失败:', error)
-        return
-      }
-    }
-
-    // 加载结束引导音频
-    const loadEndSound = async (timestamp?: number) => {
-      try {
-        console.log('开始加载结束引导音频')
+  // 加载结束引导音频
+  const loadEndSound = async (timestamp?: number) => {
+    try {
+      console.log(`开始加载结束引导音频: ${selectedGuidance.id}`)
+      if (selectedGuidance.id === 'none') {
+        // 无引导语模式使用默认结束音效
         const response = await fetch(`/ai-sounds/end.mp3?t=${timestamp || new Date().getTime()}`)
         if (!response.ok) {
           throw new Error(`加载失败: ${response.status} ${response.statusText}`)
@@ -576,8 +576,34 @@ export default function MeditationPage() {
           endSoundBufferRef.current = audioBuffer
           console.log('结束引导音频加载成功，时长:', audioBuffer.duration)
         }
+      } else {
+        // 根据选择的引导语类型加载对应的音频
+        const audioPath = `/ai-sounds/end_${selectedGuidance.id}.mp3?t=${timestamp || new Date().getTime()}`
+        const response = await fetch(audioPath)
+        if (!response.ok) {
+          throw new Error(`加载失败: ${response.status} ${response.statusText}`)
+        }
+        const arrayBuffer = await response.arrayBuffer()
+        if (audioContextRef.current) {
+          const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer)
+          endSoundBufferRef.current = audioBuffer
+          console.log('结束引导音频加载成功，时长:', audioBuffer.duration)
+        }
+      }
+    } catch (error) {
+      console.error('加载结束引导音频失败:', error)
+    }
+  }
+
+  // 加载音频缓冲区
+  useEffect(() => {
+    // 创建音频上下文
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       } catch (error) {
-        console.error('加载结束引导音频失败:', error)
+        console.error('创建音频上下文失败:', error)
+        return
       }
     }
 
@@ -603,16 +629,20 @@ export default function MeditationPage() {
     // 加载开始引导音频
     const loadStartSound = async () => {
       try {
-        console.log('开始加载开始引导音频')
-        const response = await fetch('/ai-sounds/start.mp3')
-        if (!response.ok) {
-          throw new Error(`加载失败: ${response.status} ${response.statusText}`)
+        console.log(`开始加载开始引导音频: ${selectedGuidance.id}`)
+        if (selectedGuidance.id === 'none') {
+          // 无引导语模式不加载音频
+          startSoundRef.current = null
+          return
         }
-        const arrayBuffer = await response.arrayBuffer()
-        if (audioContextRef.current) {
-          startSoundRef.current = new Audio('/ai-sounds/start.mp3')
-          console.log('开始引导音频加载成功')
-        }
+        
+        // 根据选择的引导语类型加载对应的音频
+        const audioPath = `/ai-sounds/start_${selectedGuidance.id}.mp3`
+        startSoundRef.current = new Audio(audioPath)
+        startSoundRef.current.volume = volume / 100
+        // 预加载音频
+        startSoundRef.current.load()
+        console.log('开始引导音频加载成功')
       } catch (error) {
         console.error('加载开始引导音频失败:', error)
       }
@@ -621,8 +651,19 @@ export default function MeditationPage() {
     // 加载中间引导音频
     const loadMidSound = async () => {
       try {
-        console.log('开始加载中间引导音频')
-        midSoundRef.current = new Audio('/ai-sounds/mid.mp3')
+        console.log(`开始加载中间引导音频: ${selectedGuidance.id}`)
+        if (selectedGuidance.id === 'none') {
+          // 无引导语模式不加载音频
+          midSoundRef.current = null
+          return
+        }
+        
+        // 根据选择的引导语类型加载对应的音频
+        const audioPath = `/ai-sounds/mid_${selectedGuidance.id}.mp3`
+        midSoundRef.current = new Audio(audioPath)
+        midSoundRef.current.volume = volume / 100
+        // 预加载音频
+        midSoundRef.current.load()
         console.log('中间引导音频加载成功')
       } catch (error) {
         console.error('加载中间引导音频失败:', error)
@@ -643,7 +684,7 @@ export default function MeditationPage() {
       endSoundBufferRef.current = null
       templeBellsBufferRef.current = null
     }
-  }, [])
+  }, [selectedGuidance, volume])
 
   // 格式化时间
   const formatTime = (seconds: number) => {
@@ -660,16 +701,21 @@ export default function MeditationPage() {
     setSelectedDuration(duration)
     setTimeLeft(duration * 60)
     
+    // 如果时间小于10分钟且当前选择的不是"无引导语"，强制设置为"无引导语"
+    if (duration < 10 && selectedGuidance.id !== 'none') {
+      const noneGuidance = guidances.find(g => g.id === 'none')
+      if (noneGuidance) {
+        setSelectedGuidance(noneGuidance)
+      }
+    }
+    
     // 重置引导音频状态
     setGuideState('none')
     midSoundPlayedRef.current = false
     audioPositionRef.current = {start: 0, mid: 0, end: 0}
     
-    // 只有当总时间足够长（大于50秒）时才设置开始引导音效
-    if (duration * 60 > 50 && autoStart) {
-      setGuideState('start')
-    }
-    
+    // 修改这里：不再在resetTimer中设置guideState为'start'
+    // 只设置isPlaying状态
     setIsPlaying(autoStart)
   }
 
@@ -763,14 +809,14 @@ export default function MeditationPage() {
       // 强制重新加载音频文件
       if (startSoundRef.current) {
         startSoundRef.current.pause()
-        startSoundRef.current = new Audio(`/ai-sounds/start.mp3?t=${timestamp}`)
+        startSoundRef.current = new Audio(`/ai-sounds/start_${selectedGuidance.id}.mp3?t=${timestamp}`)
         startSoundRef.current.load() // 确保加载新文件
         startSoundRef.current.volume = volume / 100
       }
       
       if (midSoundRef.current) {
         midSoundRef.current.pause()
-        midSoundRef.current = new Audio(`/ai-sounds/mid.mp3?t=${timestamp}`)
+        midSoundRef.current = new Audio(`/ai-sounds/mid_${selectedGuidance.id}.mp3?t=${timestamp}`)
         midSoundRef.current.load() // 确保加载新文件
         midSoundRef.current.volume = volume / 100
       }
@@ -789,6 +835,30 @@ export default function MeditationPage() {
       setIsGeneratingTTS(false)
     }
   }
+
+  // 加载引导语文本
+  useEffect(() => {
+    const loadGuidanceText = async () => {
+      if (selectedGuidance.id === 'none') {
+        setGuidanceFullText('无引导语模式，专注于自己的呼吸和感受，享受宁静的冥想时光...')
+        return
+      }
+      
+      try {
+        const response = await fetch(`/ai-txts/${selectedGuidance.id}.txt`)
+        if (!response.ok) {
+          throw new Error(`加载文本失败: ${response.status}`)
+        }
+        const text = await response.text()
+        setGuidanceFullText(text)
+      } catch (error) {
+        console.error('加载引导语文本失败:', error)
+        setGuidanceFullText('无法加载引导语文本')
+      }
+    }
+    
+    loadGuidanceText()
+  }, [selectedGuidance])
 
   return (
     <div
@@ -828,7 +898,15 @@ export default function MeditationPage() {
                 <p className="text-white/80 text-sm sm:text-base leading-relaxed">
                   {selectedGuidance.content}
                 </p>
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-between mt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFullTextDialog(true)}
+                    className="text-white/60 hover:text-white hover:bg-white/10 text-xs sm:text-sm"
+                  >
+                    查看全文
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -987,11 +1065,12 @@ export default function MeditationPage() {
                       setIsPlaying(false)
                     } else if (!isPlaying) {
                       // 如果是从暂停状态变为播放状态
-                      // 如果是刚开始计时且时间足够长（大于50秒），播放开始引导音效
+                      // 如果是刚开始计时且不是"无引导语"且时间至少10分钟，才播放开始引导音效
                       const totalTime = selectedDuration * 60
                       const elapsedTime = totalTime - timeLeft
                       
-                      if (elapsedTime < 1 && totalTime > 50) {
+                      // 在点击开始按钮时，如果是刚开始计时且不是"无引导语"且设置时间至少10分钟，播放引导音效
+                      if (elapsedTime < 1 && selectedGuidance.id !== 'none' && selectedDuration >= 10) {
                         setGuideState('start')
                       }
                       
@@ -1191,47 +1270,80 @@ export default function MeditationPage() {
               <DialogPrimitive.Content
                 className="fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-[425px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-black/20 backdrop-blur-xl border-white/10 p-4 md:p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl md:rounded-2xl"
               >
-              <DialogHeader>
-                <DialogTitle className="text-white">引导语</DialogTitle>
-                <DialogDescription className="text-white/80">
-                  选择一个引导语来帮助您进入冥想状态
-                </DialogDescription>
-              </DialogHeader>
-              <Tabs
-                defaultValue={guidances[0].id}
-                className="mt-4"
-                onValueChange={(value) => {
-                  const guidance = guidances.find(g => g.id === value)
-                  if (guidance) setSelectedGuidance(guidance)
-                }}
-              >
-                <TabsList className="w-full bg-white/10 h-auto flex flex-col sm:flex-row gap-1 p-1">
+                <DialogHeader>
+                  <DialogTitle className="text-white">引导语</DialogTitle>
+                  <DialogDescription className="text-white/80">
+                    选择一个引导语来帮助您进入冥想状态
+                    <div className="mt-2 p-2 bg-blue-500/30 text-white rounded-md text-sm">
+                      提醒：引导语需要至少10分钟的冥想时间才能完整播放{selectedDuration < 10 ? `，当前设置为${selectedDuration}分钟` : ''}
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                <Tabs
+                  defaultValue={selectedGuidance.id}
+                  className="mt-4"
+                  onValueChange={(value) => {
+                    const guidance = guidances.find(g => g.id === value)
+                    if (guidance) {
+                      setSelectedGuidance(guidance)
+                      
+                      // 首先停止所有正在播放的音频
+                      if (isPlaying) {
+                        if (timerRef.current) {
+                          clearInterval(timerRef.current)
+                          timerRef.current = null
+                        }
+                        setIsPlaying(false);
+                      }
+                      if (isPlayingEndSound) {
+                        stopEndSound();
+                      }
+                      
+                      // 如果选择的引导语不是"无引导语"且当前时间小于10分钟，自动调整为10分钟
+                      let newDuration = selectedDuration;
+                      if (guidance.id !== 'none' && selectedDuration < 10) {
+                        newDuration = 10;
+                        setSelectedDuration(10);
+                      }
+                      
+                      // 只重置计时器，但不自动开始（第二个参数设为false）
+                      resetTimer(newDuration, false);
+                      
+                      // 自动关闭对话框
+                      const closeButton = document.querySelector('[aria-label="关闭"]') as HTMLButtonElement | null;
+                      if (closeButton) {
+                        closeButton.click();
+                      }
+                    }
+                  }}
+                >
+                  <TabsList className="w-full bg-white/10 h-auto flex flex-col sm:flex-row gap-1 p-1">
+                    {guidances.map(guidance => (
+                      <TabsTrigger
+                        key={guidance.id}
+                        value={guidance.id}
+                        className="flex-1 px-3 py-1.5 text-sm"
+                      >
+                        {guidance.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
                   {guidances.map(guidance => (
-                    <TabsTrigger
-                      key={guidance.id}
-                      value={guidance.id}
-                      className="flex-1 px-3 py-1.5 text-sm"
-                    >
-                      {guidance.name}
-                    </TabsTrigger>
+                    <TabsContent key={guidance.id} value={guidance.id}>
+                      <p className="text-white/80 leading-relaxed">
+                        {guidance.content}
+                      </p>
+                    </TabsContent>
                   ))}
-                </TabsList>
-                {guidances.map(guidance => (
-                  <TabsContent key={guidance.id} value={guidance.id}>
-                    <p className="text-white/80 leading-relaxed">
-                      {guidance.content}
-                    </p>
-                  </TabsContent>
-                ))}
-              </Tabs>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCustomTTS(true)}
-                className="text-white hover:text-white hover:bg-white/20 backdrop-blur-sm"
-              >
-                自定义引导语
-              </Button>
+                </Tabs>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCustomTTS(true)}
+                  className="text-white hover:text-white hover:bg-white/20 backdrop-blur-sm"
+                >
+                  自定义引导语
+                </Button>
                 <DialogPrimitive.Close className="absolute right-2 md:right-4 top-2 md:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                   <X className="h-4 w-4 text-white" />
                   <span className="sr-only">关闭</span>
@@ -1299,7 +1411,7 @@ export default function MeditationPage() {
             className="fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-[425px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-black/20 backdrop-blur-xl border-white/10 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl"
           >
             <DialogHeader>
-              <DialogTitle className="text-white">自定义TTS引导语</DialogTitle>
+              <DialogTitle className="text-white">自定义引导语</DialogTitle>
               <DialogDescription className="text-white/80">
                 请输入您的自定义引导语
               </DialogDescription>
@@ -1347,10 +1459,34 @@ export default function MeditationPage() {
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>
+      {/* 引导语全文对话框 */}
+      <Dialog open={showFullTextDialog} onOpenChange={setShowFullTextDialog}>
+        <DialogPortal>
+          <DialogPrimitive.Content
+            className="fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-[700px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-black/20 backdrop-blur-xl border-white/10 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl max-h-[80vh] overflow-y-auto"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-white">{selectedGuidance.name} 引导语全文</DialogTitle>
+            </DialogHeader>
+            <div className="text-white/90 whitespace-pre-wrap leading-relaxed">
+              {guidanceFullText}
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button
+                onClick={() => setShowFullTextDialog(false)}
+                className="bg-white text-black hover:bg-white/90"
+              >
+                关闭
+              </Button>
+            </div>
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4 text-white" />
+              <span className="sr-only">关闭</span>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
     </div>
   )
-}
-function loadEndSound(timestamp: number) {
-  throw new Error('Function not implemented.');
 }
 

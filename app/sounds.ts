@@ -16,8 +16,7 @@ export const sounds: SoundData[] = [
     name: '森林鸟鸣',
     category: '自然',
     iconType: 'forest',
-    audioUrl: '/sounds/forest-birds.mp3',
-    isDefault: true
+    audioUrl: '/sounds/forest-birds.mp3'
   },
   {
     id: 'waves',
@@ -31,7 +30,8 @@ export const sounds: SoundData[] = [
     name: '溪流',
     category: '自然',
     iconType: 'creek',
-    audioUrl: '/sounds/creek.mp3'
+    audioUrl: '/sounds/creek.mp3',
+    isDefault: true
   },
   {
     id: 'wind',

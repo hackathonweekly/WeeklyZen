@@ -1,11 +1,8 @@
-import { JetBrains_Mono as FontMono, Inter as FontSans } from 'next/font/google'
-
-export const fontSans = FontSans({
-  subsets: ['latin'],
+// 使用系统默认字体，不加载外部字体
+export const fontSans = {
   variable: '--font-sans',
-})
+} as const
 
-export const fontMono = FontMono({
-  subsets: ['latin'],
+export const fontMono = {
   variable: '--font-mono',
-})
+} as const

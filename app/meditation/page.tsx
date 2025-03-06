@@ -1336,14 +1336,6 @@ export default function MeditationPage() {
                     </TabsContent>
                   ))}
                 </Tabs>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCustomTTS(true)}
-                  className="text-white hover:text-white hover:bg-white/20 backdrop-blur-sm"
-                >
-                  自定义引导语
-                </Button>
                 <DialogPrimitive.Close className="absolute right-2 md:right-4 top-2 md:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                   <X className="h-4 w-4 text-white" />
                   <span className="sr-only">关闭</span>
@@ -1404,7 +1396,7 @@ export default function MeditationPage() {
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>
-      {/* 自定义TTS引导语对话框 */}
+      {/* 自定义TTS引导语对话框 - 已隐藏
       <Dialog open={showCustomTTS} onOpenChange={setShowCustomTTS}>
         <DialogPortal>
           <DialogPrimitive.Content
@@ -1416,29 +1408,41 @@ export default function MeditationPage() {
                 请输入您的自定义引导语
               </DialogDescription>
             </DialogHeader>
-            <div className="flex flex-col gap-4">
-              <Label className="text-white">开始引导语</Label>
-              <Textarea
-                value={customTTS.start}
-                onChange={(e) => setCustomTTS(prev => ({...prev, start: e.target.value}))}
-                className="bg-black/20 text-white p-2 rounded-md"
-              />
-              <Label className="text-white">中间引导语</Label>
-              <Textarea
-                value={customTTS.mid}
-                onChange={(e) => setCustomTTS(prev => ({...prev, mid: e.target.value}))}
-                className="bg-black/20 text-white p-2 rounded-md"
-              />
-              <Label className="text-white">结束引导语</Label>
-              <Textarea
-                value={customTTS.end}
-                onChange={(e) => setCustomTTS(prev => ({...prev, end: e.target.value}))}
-                className="bg-black/20 text-white p-2 rounded-md"
-              />
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="custom-start" className="text-right text-white">开始</Label>
+                <Textarea 
+                  id="custom-start" 
+                  className="col-span-3 bg-white/10 border-white/20 text-white"
+                  placeholder="请输入开始引导语..." 
+                  value={customTTS.start}
+                  onChange={(e) => setCustomTTS({...customTTS, start: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="custom-mid" className="text-right text-white">中间</Label>
+                <Textarea 
+                  id="custom-mid" 
+                  className="col-span-3 bg-white/10 border-white/20 text-white"
+                  placeholder="请输入中间引导语..." 
+                  value={customTTS.mid}
+                  onChange={(e) => setCustomTTS({...customTTS, mid: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="custom-end" className="text-right text-white">结束</Label>
+                <Textarea 
+                  id="custom-end" 
+                  className="col-span-3 bg-white/10 border-white/20 text-white"
+                  placeholder="请输入结束引导语..." 
+                  value={customTTS.end}
+                  onChange={(e) => setCustomTTS({...customTTS, end: e.target.value})}
+                />
+              </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="ghost"
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
                 onClick={() => setShowCustomTTS(false)}
                 className="text-white hover:text-white hover:bg-white/20"
               >
@@ -1459,6 +1463,7 @@ export default function MeditationPage() {
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>
+      */}
       {/* 引导语全文对话框 */}
       <Dialog open={showFullTextDialog} onOpenChange={setShowFullTextDialog}>
         <DialogPortal>

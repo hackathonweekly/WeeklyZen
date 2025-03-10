@@ -1,123 +1,79 @@
 import React from 'react';
-import {
-  Wind,
-  Cloud,
-  CloudRain,
-  Waves,
-  Trees,
-  Bird,
-  Music,
-  Coffee,
-  Umbrella,
-  Leaf,
-  Droplets,
-  CloudLightning,
-  Mountain,
-  Flame,
-  Sun,
-  Moon,
-  Keyboard,
-  Train,
-  Building2,
-  Utensils,
-  TreePine,
-  Store,
-  Bug
-} from 'lucide-react';
+import { Music, Wind, Waves, Droplets, Cloud, CloudRain, Umbrella, CloudLightning, TreePine, Flame, Sun, Moon, Car, Coffee, Keyboard, Train, Bell } from 'lucide-react';
 
-export type IconType =
-  | 'bells'
-  | 'om'
-  | 'bowl'
-  | 'nature'
-  | 'flute'
+export type IconType = 
+  | 'forest' 
+  | 'waves' 
+  | 'creek' 
+  | 'wind' 
+  | 'leaves' 
+  | 'waterfall' 
+  | 'fire' 
+  | 'beach' 
+  | 'night-forest'
   | 'rain-light'
   | 'rain-heavy'
   | 'rain-roof'
   | 'rain-window'
   | 'thunder'
-  | 'rain-umbrella'
   | 'rain-leaves'
   | 'rain-puddle'
-  | 'rain-distant'
-  | 'forest'
-  | 'waves'
-  | 'creek'
-  | 'wind'
-  | 'leaves'
-  | 'waterfall'
-  | 'fire'
-  | 'beach'
-  | 'night-forest'
   | 'traffic'
   | 'cafe'
   | 'keyboard'
   | 'subway'
-  | 'office'
-  | 'restaurant'
   | 'park'
-  | 'market'
   | 'train'
-  | 'birds'
-  | 'crickets'
-  | 'frogs'
-  | 'seagulls'
-  | 'wolves'
-  | 'owls'
-  | 'cats'
-  | 'dolphins'
-  | 'whales';
+  | 'bells';
 
 interface SoundIconProps {
-  type: IconType;
-  size?: number;
+  iconType: IconType;
+  className?: string;
 }
 
-export const SoundIcon: React.FC<SoundIconProps> = ({ type, size = 24 }) => {
-  const icons = {
-    'bells': Moon,
-    'om': Sun,
-    'bowl': Moon,
-    'nature': Trees,
-    'flute': Music,
-    'rain-light': CloudRain,
-    'rain-heavy': Cloud,
-    'rain-roof': CloudRain,
-    'rain-window': CloudRain,
-    'thunder': CloudLightning,
-    'rain-umbrella': Umbrella,
-    'rain-leaves': Leaf,
-    'rain-puddle': Droplets,
-    'rain-distant': Cloud,
-    'forest': Trees,
-    'waves': Waves,
-    'creek': Wind,
-    'wind': Wind,
-    'leaves': Leaf,
-    'waterfall': Mountain,
-    'fire': Flame,
-    'beach': Sun,
-    'night-forest': Moon,
-    'traffic': Music,
-    'cafe': Coffee,
-    'keyboard': Keyboard,
-    'subway': Train,
-    'office': Building2,
-    'restaurant': Utensils,
-    'park': TreePine,
-    'market': Store,
-    'train': Train,
-    'birds': Bird,
-    'crickets': Bug,
-    'frogs': Bug,
-    'seagulls': Bird,
-    'wolves': Music,
-    'owls': Moon,
-    'cats': Music,
-    'dolphins': Music,
-    'whales': Music
-  };
-
-  const IconComponent = icons[type];
-  return <IconComponent size={size} />;
-};
+export function SoundIcon({ iconType, className = '' }: SoundIconProps) {
+  const iconSize = 24;
+  
+  switch (iconType) {
+    case 'forest':
+      return <TreePine size={iconSize} className={className} />;
+    case 'waves':
+    case 'beach':
+      return <Waves size={iconSize} className={className} />;
+    case 'creek':
+    case 'waterfall':
+      return <Droplets size={iconSize} className={className} />;
+    case 'wind':
+    case 'leaves':
+      return <Wind size={iconSize} className={className} />;
+    case 'fire':
+      return <Flame size={iconSize} className={className} />;
+    case 'night-forest':
+      return <Moon size={iconSize} className={className} />;
+    case 'rain-light':
+    case 'rain-roof':
+    case 'rain-window':
+    case 'rain-leaves':
+    case 'rain-puddle':
+      return <CloudRain size={iconSize} className={className} />;
+    case 'rain-heavy':
+      return <Umbrella size={iconSize} className={className} />;
+    case 'thunder':
+      return <CloudLightning size={iconSize} className={className} />;
+    case 'traffic':
+      return <Car size={iconSize} className={className} />;
+    case 'cafe':
+      return <Coffee size={iconSize} className={className} />;
+    case 'keyboard':
+      return <Keyboard size={iconSize} className={className} />;
+    case 'subway':
+    case 'train':
+      return <Train size={iconSize} className={className} />;
+    case 'park':
+      return <Sun size={iconSize} className={className} />;
+    case 'bells':
+      return <Bell size={iconSize} className={className} />;
+    default:
+      return <Music size={iconSize} className={className} />;
+  }
+}

@@ -1,6 +1,6 @@
 import { IconType } from './SoundIcon';
 
-interface SoundData {
+export interface SoundData {
   id: string;
   name: string;
   category: string;

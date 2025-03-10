@@ -10,6 +10,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useState, useRef } from 'react';
 import { useTheme } from "next-themes";
 import { useAppTheme } from '@/contexts/theme-context';
+import { DialogContent } from "@/components/ui/dialog";
 
 export default function IndexPage() {
   const isMobile = useIsMobile();
@@ -46,6 +47,7 @@ export default function IndexPage() {
     // 启动呼吸动画循环
     const startBreathingCycle = () => {
       let cyclePosition = 0;
+      let textChangeTimeout: NodeJS.Timeout | null = null;
       
       // 清除任何现有的间隔
       if (breathingIntervalRef.current) {
@@ -81,7 +83,7 @@ export default function IndexPage() {
   // 如果组件尚未挂载，先返回一个基础结构，避免水合不匹配
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950 text-white">
+      <div className="min-h-screen bg-gradient-to-b from-blue-950 via-indigo-950 to-blue-950 text-white">
         <div className="fixed top-0 left-0 w-full z-50 invisible">
           <SiteHeader scrolled={false} />
         </div>
@@ -127,7 +129,7 @@ export default function IndexPage() {
           
           {/* 柔和的波浪动画 */}
           <motion.div 
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0 opacity-20 -z-5"
             style={{ 
               background: isDarkTheme 
                 ? "radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, transparent 70%)"
@@ -145,13 +147,25 @@ export default function IndexPage() {
             }}
           />
           
+          {/* 呼吸圆圈背景光晕 - 仅在夜间模式下显示 */}
+          {/* {isDarkTheme && (
+            <motion.div 
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 bg-indigo-300/30 z-10"
+              animate={{ 
+                width: "100vmin",
+                height: "100vmin",
+              }}
+            />
+          )} */}
+          
           {/* 呼吸圆圈 - 根据呼吸状态变化 */}
           <motion.div 
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-              isDarkTheme 
-                ? 'bg-gradient-to-r from-indigo-500/50 to-purple-500/50 mix-blend-screen shadow-[0_0_100px_rgba(99,102,241,0.5)]'
-                : 'bg-gradient-to-r from-blue-500/50 to-sky-500/50 mix-blend-multiply shadow-[0_0_100px_rgba(59,130,246,0.5)]'
-            }`}
+            style={{
+              background: isDarkTheme 
+                ? 'radial-gradient(circle, rgba(224,231,255,0.9) 0%, rgba(165,180,252,0.8) 100%)' 
+                : 'radial-gradient(circle, rgba(59,130,246,0.6) 0%, rgba(96,165,250,0.5) 100%)',
+            }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full z-20"
             animate={{ 
               width: 
                 breathingState === 'inhale' ? ["40vmin", "70vmin"] : 
@@ -164,19 +178,19 @@ export default function IndexPage() {
                 breathingState === 'exhale' ? ["70vmin", "40vmin"] : 
                 ["40vmin"],
               opacity: 
-                breathingState === 'inhale' ? [0.4, 0.8] : 
-                breathingState === 'hold' ? [0.8] : 
-                breathingState === 'exhale' ? [0.8, 0.4] : 
-                [0.4],
+                breathingState === 'inhale' ? [0.9, 1] : 
+                breathingState === 'hold' ? [1] : 
+                breathingState === 'exhale' ? [1, 0.9] : 
+                [0.9],
               boxShadow: isDarkTheme
-                ? (breathingState === 'inhale' ? ['0 0 50px rgba(99,102,241,0.4)', '0 0 100px rgba(99,102,241,0.7)'] :
-                  breathingState === 'hold' ? ['0 0 100px rgba(99,102,241,0.7)'] :
-                  breathingState === 'exhale' ? ['0 0 100px rgba(99,102,241,0.7)', '0 0 50px rgba(99,102,241,0.4)'] :
-                  ['0 0 50px rgba(99,102,241,0.4)'])
-                : (breathingState === 'inhale' ? ['0 0 50px rgba(59,130,246,0.4)', '0 0 100px rgba(59,130,246,0.7)'] :
+                ? (breathingState === 'inhale' ? ['0 0 100px rgba(165,180,252,0.7)', '0 0 150px rgba(224,231,255,0.9)'] :
+                  breathingState === 'hold' ? ['0 0 150px rgba(224,231,255,0.9)'] :
+                  breathingState === 'exhale' ? ['0 0 150px rgba(224,231,255,0.9)', '0 0 100px rgba(165,180,252,0.7)'] :
+                  ['0 0 100px rgba(165,180,252,0.7)'])
+                : (breathingState === 'inhale' ? ['0 0 50px rgba(59,130,246,0.5)', '0 0 100px rgba(59,130,246,0.7)'] :
                   breathingState === 'hold' ? ['0 0 100px rgba(59,130,246,0.7)'] :
-                  breathingState === 'exhale' ? ['0 0 100px rgba(59,130,246,0.7)', '0 0 50px rgba(59,130,246,0.4)'] :
-                  ['0 0 50px rgba(59,130,246,0.4)']),
+                  breathingState === 'exhale' ? ['0 0 100px rgba(59,130,246,0.7)', '0 0 50px rgba(59,130,246,0.5)'] :
+                  ['0 0 50px rgba(59,130,246,0.5)']),
             }}
             transition={{ 
               duration: 
@@ -187,32 +201,6 @@ export default function IndexPage() {
               ease: "easeInOut",
             }}
           />
-          
-          {/* 呼吸提示文字 */}
-          <motion.div 
-            className={`absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 px-6 py-2 ${
-              isDarkTheme 
-                ? 'bg-indigo-900/50 backdrop-blur-sm rounded-lg border border-indigo-500/30 text-white/90 font-medium'
-                : 'bg-blue-100/70 backdrop-blur-sm rounded-lg border border-blue-300/30 text-blue-800 font-medium'
-            } text-2xl tracking-widest uppercase z-20`}
-            animate={{ 
-              opacity: breathingState === 'rest' ? [0, 0] : [0, 1, 1, 0],
-              scale: [0.95, 1.05, 1.05, 0.95],
-            }}
-            transition={{ 
-              duration: 
-                breathingState === 'inhale' ? 4 : 
-                breathingState === 'hold' ? 2 : 
-                breathingState === 'exhale' ? 4 : 
-                2,
-              ease: "easeInOut",
-            }}
-          >
-            {breathingState === 'inhale' ? t("吸气", "Inhale") : 
-             breathingState === 'hold' ? t("保持", "Hold") : 
-             breathingState === 'exhale' ? t("呼气", "Exhale") : 
-             t("放松", "Rest")}
-          </motion.div>
           
           {/* 光晕效果 */}
           <div className={`absolute top-1/4 left-1/4 w-24 h-24 rounded-full ${isDarkTheme ? 'bg-blue-500/5' : 'bg-blue-300/20'} blur-3xl`} />
@@ -226,11 +214,26 @@ export default function IndexPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="mb-8 inline-block"
+            className="mb-4 inline-block"
           >
-            <div className={`text-sm md:text-base ${isDarkTheme ? 'text-indigo-300' : 'text-blue-700'} font-medium tracking-wide uppercase mb-1`}>
+            <div className={`text-sm md:text-base ${isDarkTheme ? 'text-indigo-500' : 'text-blue-900'} font-medium tracking-wide uppercase mb-1`}>
               {t("周周冥想", "Weekly Zen")}
             </div>
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={breathingState === 'inhale' || breathingState === 'hold' ? 'inhale' : 'exhale'}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.5 }}
+                className={`text-sm md:text-base ${isDarkTheme ? 'text-indigo-500/80' : 'text-blue-900/80'} font-medium tracking-wide mb-3`}
+              >
+                {breathingState === 'inhale' || breathingState === 'hold' 
+                  ? t("跟随呼吸球，吸气", "Follow the breathing sphere, inhale") 
+                  : t("跟随呼吸球，呼气", "Follow the breathing sphere, exhale")}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
           
           <motion.h1
@@ -304,7 +307,7 @@ export default function IndexPage() {
       <section className="py-20 sm:py-28 relative overflow-hidden">
         {/* 背景效果 */}
         <div className="absolute inset-0 -z-10 opacity-30">
-          <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-blue-950/50 to-indigo-950/80' : 'bg-gradient-to-b from-blue-100/50 to-indigo-100/80'}`} />
+          <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-blue-950/30 to-indigo-950/50' : 'bg-gradient-to-b from-purple-100/50 to-blue-100/70'}`} />
           <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent ${isDarkTheme ? 'via-indigo-500/20' : 'via-blue-400/30'} to-transparent`} />
         </div>
         
@@ -413,7 +416,7 @@ export default function IndexPage() {
       <section className="py-20 sm:py-28 relative overflow-hidden">
         {/* 背景效果 */}
         <div className="absolute inset-0 -z-10 opacity-40">
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/50 to-purple-950/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-950/50 to-indigo-950/30" />
           <motion.div 
             className="absolute inset-0 opacity-20"
             animate={{
@@ -479,7 +482,7 @@ export default function IndexPage() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <motion.div 
-              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-indigo-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
+              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
@@ -495,7 +498,7 @@ export default function IndexPage() {
             </motion.div>
             
             <motion.div 
-              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-indigo-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
+              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
@@ -511,7 +514,7 @@ export default function IndexPage() {
             </motion.div>
             
             <motion.div 
-              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-indigo-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
+              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
@@ -527,7 +530,7 @@ export default function IndexPage() {
             </motion.div>
             
             <motion.div 
-              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-indigo-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
+              className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
@@ -607,7 +610,7 @@ export default function IndexPage() {
       </section>
       
       {/* 页脚 */}
-      <footer className={`py-12 border-t ${isDarkTheme ? 'border-indigo-800/20' : 'border-blue-300/30'}`}>
+      <footer className={`py-12 border-t ${isDarkTheme ? 'border-blue-800/20' : 'border-blue-300/30'}`}>
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-6 md:mb-0">

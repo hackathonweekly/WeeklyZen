@@ -40,7 +40,8 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const themeStyles = {
     // 背景色
     background: isDarkTheme 
-      ? 'bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950'
+    // ? 'bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950'
+      ? 'bg-gradient-to-b from-indigo-200 via-purple-100 to-blue-200' // 恢复原始的深色背景
       : 'bg-gradient-to-b from-sky-100 via-blue-50 to-indigo-100',
     
     // 文本颜色

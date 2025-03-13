@@ -77,15 +77,6 @@ export function useGuidanceTexts() {
         // 等待所有文件加载完成
         await Promise.all(promises);
         
-        // 添加"无引导语"选项
-        loadedGuidances.unshift({
-          id: 'none',
-          title: '无引导语',
-          description: '纯净冥想体验',
-          paragraphs: ['无引导语模式，专注于自己的呼吸和感受，享受宁静的冥想时光...'],
-          content: '无引导语模式，专注于自己的呼吸和感受，享受宁静的冥想时光...'
-        });
-
         setGuidanceTexts(loadedGuidances);
         setLoading(false);
       } catch (err) {

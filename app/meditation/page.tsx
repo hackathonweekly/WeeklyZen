@@ -20,6 +20,7 @@ import { useTheme } from 'next-themes'
 import { BackButton } from '../../components/back-button'
 import { useGuidanceTexts, guidanceTexts as defaultGuidanceTexts } from '@/app/guidance'
 import { SoundIcon } from '@/app/SoundIcon'
+import { BreathingSphere } from '@/components/breathing-sphere'
 
 // 引导语内容
 const guidances = [
@@ -117,12 +118,12 @@ export default function MeditationPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   // 默认使用光环扩散效果
   const [animationType, setAnimationType] = useState(3)
-  // 设置默认音效（篝火）
-  const defaultSound = sounds.find(s => s.isDefault) || null
+  // 设置默认音效（海浪）
+  const defaultSound = sounds.find(s => s.id === 'waves') || null
   const [selectedSound, setSelectedSound] = useState<SoundData | null>(defaultSound)
-  const [volume, setVolume] = useState(80)
+  const [volume, setVolume] = useState(25)
   const [isMuted, setIsMuted] = useState(false)
-  const previousVolume = useRef(50)
+  const previousVolume = useRef(25)
   const [selectedBackground, setSelectedBackground] = useState<string | null>(null)
   const [selectedGuidance, setSelectedGuidance] = useState<GuidanceType | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -208,33 +209,48 @@ export default function MeditationPage() {
 
   // 初始化音频
   useEffect(() => {
+    console.log('音频初始化 useEffect 被触发', { selectedSound, isPlaying });
+    
     if (selectedSound) {
       const sound = sounds.find(s => s.id === selectedSound.id)
       if (sound) {
+        console.log('找到音效:', sound.id);
+        
         if (audioRef.current) {
+          console.log('暂停并清除现有音频');
           audioRef.current.pause()
           audioRef.current = null
         }
+        
+        console.log('创建新的音频实例:', sound.audioUrl);
         const audio = new Audio(sound.audioUrl)
         audio.loop = true
         audio.volume = volume / 100
         audioRef.current = audio
+        
         if (isPlaying) {
+          console.log('当前处于播放状态，尝试播放音频');
           const playPromise = audio.play()
           if (playPromise !== undefined) {
             playPromise.catch(error => {
-              console.log('音频播放失败:', error)
+              console.error('音频播放失败:', error)
             })
           }
+        } else {
+          console.log('当前不是播放状态，不自动播放音频');
         }
       }
     } else {
+      console.log('没有选择音效');
       if (audioRef.current) {
+        console.log('暂停并清除现有音频');
         audioRef.current.pause()
         audioRef.current = null
       }
     }
+    
     return () => {
+      console.log('音频初始化 useEffect 清理函数被调用');
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current = null
@@ -314,7 +330,7 @@ export default function MeditationPage() {
       // 初始化开始音效，使用正确的文件路径
       const audio = new Audio(`/ai-sounds/start_${selectedGuidance.id}.mp3`);
       audio.volume = volume / 100;
-      // 预加载音频
+    // 预加载音频
       audio.load();
       startSoundRef.current = audio;
       console.log(`已加载开始引导音频: /ai-sounds/start_${selectedGuidance.id}.mp3`);
@@ -348,7 +364,7 @@ export default function MeditationPage() {
       // 初始化中间音效，使用正确的文件路径
       const audio = new Audio(`/ai-sounds/mid_${selectedGuidance.id}.mp3`);
       audio.volume = volume / 100;
-      // 预加载音频
+    // 预加载音频
       audio.load();
       midSoundRef.current = audio;
       console.log(`已加载中间引导音频: /ai-sounds/mid_${selectedGuidance.id}.mp3`);
@@ -750,35 +766,74 @@ export default function MeditationPage() {
 
   // 重置计时器
   const resetTimer = (duration: number, autoStart: boolean = false) => {
-    // 如果正在播放结束音频，不允许重置计时器
-    if (isPlayingEndSound) return
+    console.log('resetTimer 被调用', { duration, autoStart });
     
-    // 保存当前设置，而不是使用默认设置
-    setTimeLeft(duration * 60);
-    
-    // 如果时间小于10分钟且当前选择的不是"无引导语"，强制设置为"无引导语"
-    if (duration < 10 && selectedGuidance?.id !== 'none') {
-      const noneGuidance = guidances.find(g => g.id === 'none') as unknown as GuidanceType;
-      if (noneGuidance) {
-        setSelectedGuidance(noneGuidance);
+    try {
+      // 如果正在播放结束音频，不允许重置计时器
+      if (isPlayingEndSound) {
+        console.log('正在播放结束音效，不重置计时器');
+        return;
       }
+      
+      // 保存当前设置，而不是使用默认设置
+      console.log('设置时间为:', duration * 60, '秒');
+      setTimeLeft(duration * 60);
+      
+      // 如果时间小于10分钟且当前选择的不是"无引导语"，强制设置为"无引导语"
+      if (duration < 10 && selectedGuidance?.id !== 'none') {
+        console.log('时间小于10分钟，切换到无引导语模式');
+        const noneGuidance = guidances.find(g => g.id === 'none') as unknown as GuidanceType;
+        if (noneGuidance) {
+          setSelectedGuidance(noneGuidance);
+        }
+      }
+      
+      // 重置引导音频状态
+      console.log('重置引导音频状态');
+      setGuideState('none');
+      midSoundPlayedRef.current = false;
+      audioPositionRef.current = {start: 0, mid: 0, end: 0};
+      
+      // 如果背景音效已暂停，重新开始播放
+      if (selectedSound && audioRef.current && audioRef.current.paused) {
+        console.log('重新播放背景音效');
+        audioRef.current.volume = volume / 100;
+        
+        try {
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error('重新播放背景音效失败:', error);
+              // 尝试再次播放
+              setTimeout(() => {
+                if (audioRef.current) {
+                  audioRef.current.play().catch(e => 
+                    console.error('重试播放背景音效失败:', e)
+                  );
+                }
+              }, 1000);
+            });
+          }
+        } catch (error) {
+          console.error('播放背景音效时出错:', error);
+        }
+      }
+      
+      // 设置isPlaying状态
+      console.log('设置播放状态为:', autoStart);
+      setIsPlaying(autoStart);
+      
+      // 如果自动开始，则启动计时器
+      if (autoStart) {
+        console.log('自动开始，调用 startTimer');
+        // 使用 setTimeout 确保状态更新后再启动计时器
+        setTimeout(() => {
+          startTimer();
+        }, 100);
+      }
+    } catch (error) {
+      console.error('resetTimer 执行出错:', error);
     }
-    
-    // 重置引导音频状态
-    setGuideState('none');
-    midSoundPlayedRef.current = false;
-    audioPositionRef.current = {start: 0, mid: 0, end: 0};
-    
-    // 如果背景音效已暂停，重新开始播放
-    if (selectedSound && audioRef.current && audioRef.current.paused) {
-      audioRef.current.volume = volume / 100;
-      audioRef.current.play().catch(error => {
-        console.error('重新播放背景音效失败:', error);
-      });
-    }
-    
-    // 设置isPlaying状态
-    setIsPlaying(autoStart);
   };
 
   // 自定义TTS引导语
@@ -946,8 +1001,8 @@ export default function MeditationPage() {
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950 text-white">
         <div className="h-screen flex items-center justify-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-                    </div>
+        </div>
+                </div>
     );
   }
   
@@ -994,23 +1049,40 @@ export default function MeditationPage() {
     setShowGuidanceSelector(false);
   };
 
-  // 添加缺失的 stopEndSound 函数
+  // 停止结束音效
   const stopEndSound = () => {
-    // 停止所有活跃的音频源
-    activeAudioSourcesRef.current.forEach(source => {
-      try {
-        source.stop();
-      } catch (error) {
-        console.error('停止音频源失败:', error);
-      }
-    });
+    console.log('stopEndSound 被调用');
     
-    // 清空活跃音频源列表
-    activeAudioSourcesRef.current = [];
-    
-    // 重置状态
-    setIsPlayingEndSound(false);
-    setGuideState('none');
+    try {
+      // 停止所有活跃的音频源
+      console.log('停止所有活跃的音频源，数量:', activeAudioSourcesRef.current.length);
+      activeAudioSourcesRef.current.forEach(source => {
+        try {
+          source.stop();
+          console.log('成功停止一个音频源');
+        } catch (error) {
+          console.error('停止音频源失败:', error);
+        }
+      });
+      
+      // 清空活跃音频源列表
+      console.log('清空活跃音频源列表');
+      activeAudioSourcesRef.current = [];
+      
+      // 重置状态
+      console.log('重置状态');
+      setIsPlayingEndSound(false);
+      setGuideState('none');
+      
+      // 重置计时器
+      console.log('重置计时器');
+      setTimeLeft(selectedDuration * 60);
+    } catch (error) {
+      console.error('stopEndSound 执行出错:', error);
+      // 确保状态被重置
+      setIsPlayingEndSound(false);
+      setGuideState('none');
+    }
   };
 
   // 音量控制
@@ -1041,109 +1113,182 @@ export default function MeditationPage() {
   
   // 播放/暂停切换
   const togglePlayPause = () => {
-    if (isPlayingEndSound) {
-      stopEndSound();
-    } else if (isPlaying) {
-      setIsPlaying(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    } else {
-      // 如果时间为0，说明已经结束，需要重置
-      if (timeLeft === 0) {
-        // 重置为当前选择的时长，而不是默认时长
-        resetTimer(selectedDuration, true);
+    console.log('togglePlayPause 被调用，当前状态:', { isPlaying, isPlayingEndSound, timeLeft });
+    
+    try {
+      if (isPlayingEndSound) {
+        console.log('正在播放结束音效，停止结束音效');
+        stopEndSound();
+      } else if (isPlaying) {
+        console.log('当前正在播放，切换到暂停状态');
+        setIsPlaying(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        // 暂停背景音效
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        // 暂停引导语音频
+        if (startSoundRef.current && !startSoundRef.current.paused) {
+          audioPositionRef.current.start = startSoundRef.current.currentTime;
+          startSoundRef.current.pause();
+        }
+        if (midSoundRef.current && !midSoundRef.current.paused) {
+          audioPositionRef.current.mid = midSoundRef.current.currentTime;
+          midSoundRef.current.pause();
+        }
       } else {
-        setIsPlaying(true);
-        startTimer();
+        // 如果时间为0，说明已经结束，需要重置
+        if (timeLeft === 0) {
+          console.log('计时器已结束，重置计时器');
+          // 重置为当前选择的时长，而不是默认时长
+          resetTimer(selectedDuration, true);
+        } else {
+          console.log('当前已暂停，切换到播放状态');
+          setIsPlaying(true);
+          // 直接调用 startTimer
+          startTimer();
+        }
       }
+    } catch (error) {
+      console.error('togglePlayPause 执行出错:', error);
     }
   };
   
   // 启动计时器
   const startTimer = () => {
-    // 如果正在播放结束音频，不启动计时器
-    if (isPlayingEndSound) return;
+    console.log('startTimer 被调用');
     
-    // 如果选择了引导语且不是"无引导语"，则设置引导状态为'start'
-    if (selectedGuidance && selectedGuidance.id !== 'none') {
-      console.log('设置引导状态为start，准备播放开始引导语');
-      setGuideState('start');
-    }
-    
-    // 设置中间引导语播放标记为未播放
-    midSoundPlayedRef.current = false;
-    
-    // 启动计时器
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        // 如果时间到了，停止计时器并播放结束音效
-        if (prev <= 1) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
+    try {
+      // 如果正在播放结束音频，不启动计时器
+      if (isPlayingEndSound) {
+        console.log('正在播放结束音效，不启动计时器');
+        return;
+      }
+      
+      // 如果选择了引导语且不是"无引导语"，则设置引导状态为'start'
+      if (selectedGuidance && selectedGuidance.id !== 'none') {
+        console.log('设置引导状态为start，准备播放开始引导语');
+        setGuideState('start');
+      }
+      
+      // 设置中间引导语播放标记为未播放
+      midSoundPlayedRef.current = false;
+      
+      // 启动计时器
+      if (timerRef.current) {
+        console.log('清除现有计时器');
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // 如果有背景音效，开始播放
+      if (selectedSound && audioRef.current) {
+        console.log('开始播放背景音效:', selectedSound.id);
+        audioRef.current.volume = volume / 100;
+        
+        // 使用 try-catch 包裹音频播放
+        try {
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error('播放背景音效失败:', error);
+              // 尝试再次播放
+              setTimeout(() => {
+                if (audioRef.current) {
+                  audioRef.current.play().catch(e => 
+                    console.error('重试播放背景音效失败:', e)
+                  );
+                }
+              }, 1000);
+            });
           }
-          setIsPlaying(false);
+        } catch (error) {
+          console.error('播放背景音效时出错:', error);
+        }
+      } else {
+        console.log('没有选择背景音效或音频元素不存在');
+      }
+      
+      console.log('启动计时器间隔');
+      timerRef.current = setInterval(() => {
+        console.log('计时器间隔被触发');
+        setTimeLeft((prev) => {
+          const newTime = prev - 1;
+          console.log('更新时间:', { prev, newTime });
           
-          // 停止背景音效
-          if (audioRef.current) {
-            // 不直接暂停，而是逐渐降低音量
-            const fadeOutInterval = setInterval(() => {
-              if (audioRef.current) {
-                if (audioRef.current.volume > 0.05) {
-                  audioRef.current.volume -= 0.05;
+          // 如果时间到了，停止计时器并播放结束音效
+          if (prev <= 1) {
+            console.log('计时结束');
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            setIsPlaying(false);
+            
+            // 停止背景音效
+            if (audioRef.current) {
+              // 不直接暂停，而是逐渐降低音量
+              const fadeOutInterval = setInterval(() => {
+                if (audioRef.current) {
+                  if (audioRef.current.volume > 0.05) {
+                    audioRef.current.volume -= 0.05;
+                  } else {
+                    audioRef.current.pause();
+                    clearInterval(fadeOutInterval);
+                  }
                 } else {
-                  audioRef.current.pause();
                   clearInterval(fadeOutInterval);
                 }
-              } else {
-                clearInterval(fadeOutInterval);
-              }
-            }, 100);
+              }, 100);
+            }
+            
+            // 调用播放结束音效的函数
+            playEndSound();
+            return 0;
           }
           
-          // 调用播放结束音效的函数
-          playEndSound();
-          return 0;
-        }
-        
-        // 计算剩余时间的一半，用于播放中间引导语
-        const halfTime = selectedDuration * 30; // 总时间的一半（秒）
-        
-        // 如果时间过了一半，且选择了引导语，且不是"无引导语"，且中间引导语还未播放
-        // 且冥想时间至少为10分钟
-        if (prev <= halfTime && selectedGuidance && selectedGuidance.id !== 'none' 
-            && !midSoundPlayedRef.current && selectedDuration >= 10) {
-          // 设置中间引导语播放标记为已播放
-          midSoundPlayedRef.current = true;
-          // 设置引导状态为'mid'
-          console.log('设置引导状态为mid，准备播放中间引导语');
-          setGuideState('mid');
-        }
-        
-        return prev - 1;
-      });
-    }, 1000);
+          // 计算剩余时间的一半，用于播放中间引导语
+          const halfTime = selectedDuration * 30; // 总时间的一半（秒）
+          
+          // 如果时间过了一半，且选择了引导语，且不是"无引导语"，且中间引导语还未播放
+          // 且冥想时间至少为10分钟
+          if (newTime <= halfTime && selectedGuidance && selectedGuidance.id !== 'none' 
+              && !midSoundPlayedRef.current && selectedDuration >= 10) {
+            // 设置中间引导语播放标记为已播放
+            midSoundPlayedRef.current = true;
+            // 设置引导状态为'mid'
+            console.log('设置引导状态为mid，准备播放中间引导语');
+            setGuideState('mid');
+          }
+          
+          return newTime;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('startTimer 执行出错:', error);
+    }
   };
 
   // 播放结束音效
   const playEndSound = async () => {
-    // 确保音频上下文和缓冲区已加载
-    if (!audioContextRef.current || !endSoundBufferRef.current) {
-      console.error('音频资源未加载完成');
-      return;
-    }
-
+    console.log('playEndSound 被调用');
+    
     try {
+      // 确保音频上下文和缓冲区已加载
+      if (!audioContextRef.current || !endSoundBufferRef.current) {
+        console.error('音频资源未加载完成');
+        return;
+      }
+
       // 设置正在播放结束音频状态
+      console.log('设置正在播放结束音效状态');
       setIsPlayingEndSound(true);
       
       // 恢复音频上下文（如果被暂停）
       if (audioContextRef.current.state === 'suspended') {
+        console.log('恢复音频上下文');
         await audioContextRef.current.resume();
       }
 
@@ -1155,8 +1300,10 @@ export default function MeditationPage() {
       
       // 获取当前音频上下文时间
       const currentTime = audioContextRef.current.currentTime;
+      console.log('当前音频上下文时间:', currentTime);
       
       // 创建音频源节点（结束音效）
+      console.log('创建音频源节点');
       const endSoundSource = audioContextRef.current.createBufferSource();
       endSoundSource.buffer = endSoundBufferRef.current;
       
@@ -1164,6 +1311,7 @@ export default function MeditationPage() {
       activeAudioSourcesRef.current.push(endSoundSource);
       
       // 创建增益节点（用于控制音量）
+      console.log('创建增益节点');
       const endSoundGain = audioContextRef.current.createGain();
       endSoundGain.gain.value = volume / 100;
       
@@ -1173,12 +1321,14 @@ export default function MeditationPage() {
       
       // 获取音频的持续时间
       const endSoundDuration = endSoundBufferRef.current.duration;
+      console.log('结束音效持续时间:', endSoundDuration);
       
       // 开始播放
+      console.log('开始播放结束音效');
       endSoundSource.start(currentTime);
-      console.log('开始播放结束引导语，持续时间:', endSoundDuration);
       
       // 设置一个定时器，在音频播放完成后重置状态
+      console.log('设置定时器，在音频播放完成后重置状态');
       setTimeout(() => {
         console.log('结束引导语播放完成');
         setGuideState('none');
@@ -1200,8 +1350,8 @@ export default function MeditationPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-current mx-auto mb-4"></div>
           <p>加载引导语内容中...</p>
-        </div>
-      </div>
+                    </div>
+                  </div>
     );
   }
   
@@ -1218,8 +1368,8 @@ export default function MeditationPage() {
           >
             重试
           </Button>
-        </div>
-      </div>
+              </div>
+            </div>
     );
   }
 
@@ -1227,7 +1377,7 @@ export default function MeditationPage() {
     <div className={`min-h-screen ${themeStyles.background} ${themeStyles.text}`}>
       {/* 返回按钮 */}
       <div className="fixed top-4 left-4 z-50">
-      <BackButton />
+        <BackButton />
         </div>
 
       {/* 音频设置按钮组 - 固定在右上角 */}
@@ -1235,14 +1385,14 @@ export default function MeditationPage() {
         {/* 背景音效选择 - 保持可用 */}
           <Dialog>
             <DialogTrigger asChild>
-                  <Button
+              <Button
               variant="outline" 
-                    size="sm"
+              size="sm"
               className={`rounded-full ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
-                  >
+            >
               <Music size={16} className="mr-1" />
               {t("Sounds", "背景音效")}
-                  </Button>
+              </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
               <DialogHeader>
@@ -1286,7 +1436,7 @@ export default function MeditationPage() {
                     {sounds
                       .filter(sound => ['bird', 'stream', 'leaves', 'campfire', 'forest-night', 'waves', 'breeze', 'waterfall', 'beach'].includes(sound.id))
                       .map((sound) => (
-                        <Button
+                  <Button
                           key={sound.id}
                           variant="outline"
                           className={`flex flex-col items-center justify-center p-4 h-auto ${
@@ -1298,9 +1448,9 @@ export default function MeditationPage() {
                         >
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
-                        </Button>
-                    ))}
-          </div>
+                  </Button>
+                ))}
+              </div>
                 </TabsContent>
 
                 {/* 雨声 */}
@@ -1309,7 +1459,7 @@ export default function MeditationPage() {
                     {sounds
                       .filter(sound => ['light-rain', 'heavy-rain', 'roof-rain', 'window-rain', 'thunder-rain', 'rain-leaves', 'rain-puddle'].includes(sound.id))
                       .map((sound) => (
-                      <Button
+              <Button
                           key={sound.id}
                           variant="outline"
                           className={`flex flex-col items-center justify-center p-4 h-auto ${
@@ -1321,7 +1471,7 @@ export default function MeditationPage() {
                         >
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
-                      </Button>
+              </Button>
                     ))}
                   </div>
                 </TabsContent>
@@ -1352,11 +1502,11 @@ export default function MeditationPage() {
                 {/* 结束声 */}
                 <TabsContent value="end" className="mt-0">
                   <div className="grid grid-cols-2 gap-2">
-                    {sounds
+                        {sounds
                       .filter(sound => ['temple-bells'].includes(sound.id))
                       .map((sound) => (
-                    <Button
-                          key={sound.id}
+                            <Button
+                              key={sound.id}
                           variant="outline"
                           className={`flex flex-col items-center justify-center p-4 h-auto ${
                             selectedSound?.id === sound.id 
@@ -1367,10 +1517,10 @@ export default function MeditationPage() {
                         >
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
-                    </Button>
+                            </Button>
                     ))}
-                    </div>
-                </TabsContent>
+                      </div>
+                    </TabsContent>
               </Tabs>
           </DialogContent>
           </Dialog>
@@ -1393,9 +1543,9 @@ export default function MeditationPage() {
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
-              <DialogHeader>
+                <DialogHeader>
               <DialogTitle>{t("Choose Guidance", "选择引导语")}</DialogTitle>
-              </DialogHeader>
+                </DialogHeader>
             <div className="grid grid-cols-1 gap-2 mt-4">
               {/* 无引导选项 */}
                 <Button
@@ -1419,8 +1569,8 @@ export default function MeditationPage() {
               
               {/* 引导语选项 */}
               {guidances.map((guidance) => (
-                  <Button
-                  key={guidance.id}
+                            <Button
+                        key={guidance.id}
                   variant="outline"
                   className={`flex items-center justify-between p-4 h-auto ${
                     selectedGuidance?.id === guidance.id
@@ -1444,36 +1594,36 @@ export default function MeditationPage() {
                     <span className="text-xs opacity-70 mt-1">{t(guidance.description, guidance.description)}</span>
                   </div>
                   {selectedGuidance?.id === guidance.id && <Check size={18} />}
-                </Button>
+                            </Button>
                 ))}
-              </div>
+                      </div>
           </DialogContent>
           </Dialog>
 
         {/* 时长选择 - 冥想时禁用 */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button
+                <Button
               variant="outline" 
-              size="sm"
-              disabled={isPlaying}
+                  size="sm"
+              disabled={isPlaying || isPlayingEndSound}
               className={`rounded-full ${
-                isPlaying 
+                isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
               } ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
             >
               <span className="mr-1">{selectedDuration}</span>
               {t("min", "分钟")}
-              </Button>
+                </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md`}>
-              <DialogHeader>
+            <DialogHeader>
               <DialogTitle>{t("Choose Duration", "选择冥想时长")}</DialogTitle>
-              </DialogHeader>
+            </DialogHeader>
             <div className="grid grid-cols-3 gap-2 mt-4">
               {[5, 10, 15, 20, 30, 45, 60].map((duration) => (
-                            <Button
+              <Button
                   key={duration}
                   variant="outline"
                   size="sm"
@@ -1504,7 +1654,7 @@ export default function MeditationPage() {
                   }`}
                 >
                   {duration} {t("min", "分钟")}
-                            </Button>
+              </Button>
               ))}
                       </div>
             
@@ -1524,8 +1674,8 @@ export default function MeditationPage() {
                   disabled={isPlaying || isPlayingEndSound}
                   className={`${isDarkThemeTop ? 'bg-indigo-900/50 border-indigo-700' : 'bg-blue-50 border-blue-200'}`}
                 />
-                <Button
-                  onClick={() => {
+              <Button
+                onClick={() => {
                     if (customDuration >= 1 && customDuration <= 180) {
                       setSelectedDuration(customDuration);
                       setTimeLeft(customDuration * 60);
@@ -1535,21 +1685,21 @@ export default function MeditationPage() {
                   className={isDarkThemeTop ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-500 hover:bg-blue-600'}
                 >
                   {t("Set", "设置")}
-                </Button>
-        </div>
+              </Button>
+            </div>
       </div>
           </DialogContent>
-          </Dialog>
+      </Dialog>
 
-        {/* 音量控制 - 冥想时禁用 */}
+        {/* 音量控制 - 冥想时禁用音量调节 */}
           <Dialog>
             <DialogTrigger asChild>
               <Button
               variant="outline" 
               size="sm"
-              disabled={isPlaying}
+              disabled={isPlaying || isPlayingEndSound}
               className={`rounded-full ${
-                isPlaying 
+                isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
               } ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
@@ -1558,19 +1708,19 @@ export default function MeditationPage() {
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-xs`}>
-                <DialogHeader>
+            <DialogHeader>
               <DialogTitle>{t("Volume Control", "音量控制")}</DialogTitle>
-                </DialogHeader>
+            </DialogHeader>
             <div className="mt-4 space-y-4">
               <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
+              <Button
+                variant="ghost"
                   size="sm"
                   onClick={toggleMute}
                   className={isDarkThemeTop ? 'text-indigo-300 hover:bg-indigo-900/50' : 'text-blue-700 hover:bg-blue-100/80'}
-                >
+              >
                   {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                </Button>
+              </Button>
                 <span className="text-lg font-medium">{volume}%</span>
         </div>
               <Slider
@@ -1627,7 +1777,7 @@ export default function MeditationPage() {
             {showGuidance ? "隐藏引导语" : "显示引导语"}
           </span>
         </motion.div>
-      </div>
+    </div>
       
       {/* 添加垂直文本的样式 */}
       <style jsx global>{`
@@ -1639,39 +1789,54 @@ export default function MeditationPage() {
       `}</style>
       
       {/* 主要内容区域 */}
-      <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <div className={`relative min-h-screen flex flex-col items-center justify-center overflow-hidden ${themeStyles.background}`}>
         {/* 背景动画 */}
         <div className="absolute inset-0 -z-10">
-          {/* 星空效果 */}
-          <div className="absolute inset-0 opacity-80">
-            {Array.from({ length: 70 }).map((_, i) => (
-              <div
-                key={i}
-                className={`absolute rounded-full ${isDarkThemeTop ? 'bg-white' : 'bg-blue-500'}`}
-                style={{
-                  width: Math.random() * 3 + 1 + 'px',
-                  height: Math.random() * 3 + 1 + 'px',
-                  top: Math.random() * 100 + '%',
-                  left: Math.random() * 100 + '%',
-                  opacity: Math.random() * 0.6 + 0.3,
-                  animation: `twinkle ${Math.random() * 5 + 5}s ease-in-out ${Math.random() * 5}s infinite alternate`
-                }}
-              />
-            ))}
-          </div>
-          
           {/* 柔和的波浪动画 */}
-          <div 
-            className="absolute inset-0 opacity-20 -z-5"
+          <motion.div 
+            className="absolute inset-0 opacity-10"
             style={{ 
               background: isDarkThemeTop 
-                ? "radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, transparent 70%)"
-                : "radial-gradient(circle at center, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
-              transform: "scale(1.5)",
-              animation: "pulse 15s ease-in-out infinite"
+                ? `radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, transparent 70%)`
+                : `radial-gradient(circle at center, rgba(37, 99, 235, 0.3) 0%, transparent 70%)`,
             }}
-              />
-            </div>
+            animate={{ 
+              scale: [1.5, 1.7, 1.5],
+              opacity: [0.1, 0.15, 0.1],
+            }}
+            transition={{ 
+              duration: 15, 
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          
+          {/* 多层渐变背景 */}
+          <motion.div 
+            className="absolute inset-0 opacity-10"
+            animate={{ 
+              backgroundPosition: ['0% 0%', '100% 100%'],
+            }}
+            transition={{ 
+              duration: 60, 
+              repeat: Infinity,
+              repeatType: 'reverse',
+              ease: "linear",
+            }}
+            style={{
+              backgroundImage: isDarkThemeTop 
+                ? `radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 70% 60%, rgba(79, 70, 229, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 40% 80%, rgba(124, 58, 237, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 80% 20%, rgba(55, 48, 163, 0.4) 0%, transparent 50%)`
+                : `radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 70% 60%, rgba(37, 99, 235, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 40% 80%, rgba(29, 78, 216, 0.4) 0%, transparent 50%),
+                   radial-gradient(circle at 80% 20%, rgba(30, 64, 175, 0.4) 0%, transparent 50%)`,
+              backgroundSize: '200% 200%',
+            }}
+          />
+        </div>
         
         {/* 呼吸球部分 */}
         <div className="relative z-20 w-[70vmin] h-[70vmin] flex items-center justify-center">
@@ -1685,31 +1850,63 @@ export default function MeditationPage() {
                 </div>
               </div>
               
-              {/* 呼吸提示文本 - 放在计时器下方固定距离 */}
-              <div className="absolute top-[50%] left-1/2 -translate-x-1/2 text-center">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={isPlaying ? (breathingState === 'inhale' || breathingState === 'hold' ? 'inhale' : 'exhale') : 'paused'}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                    className={`text-base md:text-lg font-light ${isDarkThemeTop ? 'text-indigo-500' : 'text-blue-900'}`}
-                  >
-                    {!isPlaying 
-                      ? "冥想，静心开始。" 
-                      : (breathingState === 'inhale' || breathingState === 'hold') 
-                        ? "冥想中...吸气" 
-                        : "冥想中...呼气"}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              
               {/* 播放/暂停按钮 - 放在文本下方固定距离 */}
               <div className="absolute top-[65%] left-1/2 -translate-x-1/2 text-center">
-              <Button
+                <Button
                   disabled={isPlayingEndSound && guideState !== 'end'}
-                  onClick={togglePlayPause}
+                  onClick={(e) => {
+                    e.preventDefault(); // 防止事件冒泡
+                    console.log('播放/暂停按钮被点击');
+                    try {
+                      // 直接设置状态，而不是调用 togglePlayPause
+                      if (isPlaying) {
+                        console.log('直接暂停播放');
+                        setIsPlaying(false);
+                        if (timerRef.current) {
+                          clearInterval(timerRef.current);
+                        }
+                        // 暂停背景音效
+                        if (audioRef.current) {
+                          audioRef.current.pause();
+                        }
+                        // 暂停引导语音频
+                        if (startSoundRef.current && !startSoundRef.current.paused) {
+                          audioPositionRef.current.start = startSoundRef.current.currentTime;
+                          startSoundRef.current.pause();
+                        }
+                        if (midSoundRef.current && !midSoundRef.current.paused) {
+                          audioPositionRef.current.mid = midSoundRef.current.currentTime;
+                          midSoundRef.current.pause();
+                        }
+                      } else {
+                        // 如果时间为0，说明已经结束，需要重置
+                        if (timeLeft === 0) {
+                          console.log('直接重置计时器');
+                          // 重置为当前选择的时长
+                          setTimeLeft(selectedDuration * 60);
+                          // 重置引导音频状态
+                          setGuideState('none');
+                          midSoundPlayedRef.current = false;
+                          audioPositionRef.current = {start: 0, mid: 0, end: 0};
+                          // 设置播放状态
+                          setIsPlaying(true);
+                          // 使用 setTimeout 确保状态更新后再启动计时器
+                          setTimeout(() => {
+                            startTimer();
+                          }, 100);
+                        } else {
+                          console.log('直接开始播放');
+                          setIsPlaying(true);
+                          // 使用 setTimeout 确保状态更新后再启动计时器
+                          setTimeout(() => {
+                            startTimer();
+                          }, 100);
+                        }
+                      }
+                    } catch (error) {
+                      console.error('按钮点击处理出错:', error);
+                    }
+                  }}
                   className={`rounded-full w-14 h-14 ${
                     isPlayingEndSound 
                       ? (isDarkThemeTop ? 'bg-indigo-800/50 text-indigo-300 cursor-not-allowed' : 'bg-blue-300/50 text-blue-700 cursor-not-allowed')
@@ -1720,46 +1917,22 @@ export default function MeditationPage() {
                 >
                   {isPlaying ? <Pause size={24} /> : 
                    timeLeft === 0 ? <RotateCcw size={24} /> : <Play size={24} />}
-              </Button>
+                </Button>
+              </div>
             </div>
-    </div>
           </div>
 
-          {/* 呼吸圆圈 - 根据呼吸状态变化 */}
-          <div 
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: isDarkThemeTop 
-                ? 'radial-gradient(circle, rgba(224,231,255,0.9) 0%, rgba(165,180,252,0.8) 100%)' 
-                : 'radial-gradient(circle, rgba(59,130,246,0.6) 0%, rgba(96,165,250,0.5) 100%)',
-              width: breathingState === 'inhale' ? '70vmin' : 
-                    breathingState === 'hold' ? '70vmin' : 
-                    breathingState === 'exhale' ? '40vmin' : '40vmin',
-              height: breathingState === 'inhale' ? '70vmin' : 
-                     breathingState === 'hold' ? '70vmin' : 
-                     breathingState === 'exhale' ? '40vmin' : '40vmin',
-              opacity: breathingState === 'inhale' ? 1 : 
-                      breathingState === 'hold' ? 1 : 
-                      breathingState === 'exhale' ? 0.9 : 0.9,
-              boxShadow: isDarkThemeTop
-                ? (breathingState === 'inhale' ? '0 0 100px rgba(79,70,229,0.7), 0 0 150px rgba(79,70,229,0.9)' :
-                  breathingState === 'hold' ? '0 0 150px rgba(79,70,229,0.9)' :
-                  breathingState === 'exhale' ? '0 0 150px rgba(79,70,229,0.9), 0 0 100px rgba(79,70,229,0.7)' :
-                  '0 0 100px rgba(79,70,229,0.7)')
-                : (breathingState === 'inhale' ? '0 0 50px rgba(59,130,246,0.5), 0 0 100px rgba(59,130,246,0.7)' :
-                  breathingState === 'hold' ? '0 0 100px rgba(59,130,246,0.7)' :
-                  breathingState === 'exhale' ? '0 0 100px rgba(59,130,246,0.7), 0 0 50px rgba(59,130,246,0.5)' :
-                  '0 0 50px rgba(59,130,246,0.5)'),
-              transition: `all ${
-                breathingState === 'inhale' ? 4 : 
-                breathingState === 'hold' ? 2 : 
-                breathingState === 'exhale' ? 4 : 2
-              }s ease-in-out`
+          {/* 使用 BreathingSphere 组件 */}
+          <BreathingSphere 
+            isPlaying={isPlaying}
+            showText={true}
+            customText={{
+              inhale: "冥想中...吸气",
+              exhale: "冥想中...呼气",
+              paused: "冥想，静心开始。"
             }}
-            className="rounded-full z-20"
+            size="large"
+            position="center"
           />
         </div>
         

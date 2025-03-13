@@ -5,6 +5,7 @@ import { MainNav } from '@/components/main-nav'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitch } from '@/components/language-switch'
 import { cn } from '@/lib/utils'
+import { useAppTheme } from '@/contexts/theme-context'
 
 // 添加scrolled属性接口
 interface SiteHeaderProps {

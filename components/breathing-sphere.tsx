@@ -103,7 +103,7 @@ export function BreathingSphere({
         style={{
           background: isDarkTheme 
             ? 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(165,180,252,0.2) 80%)'
-            : 'radial-gradient(circle, rgba(148,189,251,0.95) 0%, rgba(148,189,251,0.9) 100%)',
+            : 'radial-gradient(circle, rgba(148,185,251,0.65) 0%, rgba(148,185,251,0.75) 100%)',
         }}
         className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full z-50`}
         animate={{ 
@@ -127,10 +127,10 @@ export function BreathingSphere({
               breathingState === 'hold' ? ['0 0 70px rgba(224,231,255,0.35)'] :
               breathingState === 'exhale' ? ['0 0 70px rgba(224,231,255,0.35)', '0 0 50px rgba(165,180,252,0.3)'] :
               ['0 0 60px rgba(165,180,252,0.4)'])
-            : (breathingState === 'inhale' ? ['0 0 100px rgba(148,189,251,0.6)', '0 0 150px rgba(148,189,251,0.7)'] :
-              breathingState === 'hold' ? ['0 0 150px rgba(148,189,251,0.7)'] :
-              breathingState === 'exhale' ? ['0 0 150px rgba(148,189,251,0.7)', '0 0 100px rgba(148,189,251,0.6)'] :
-              ['0 0 100px rgba(148,189,251,0.6)']),
+            : (breathingState === 'inhale' ? ['0 0 80px rgba(59,130,246,0.5)', '0 0 130px rgba(59,130,246,0.7)'] :
+              breathingState === 'hold' ? ['0 0 130px rgba(59,130,246,0.7)'] :
+              breathingState === 'exhale' ? ['0 0 130px rgba(59,130,246,0.7)', '0 0 80px rgba(59,130,246,0.5)'] :
+              ['0 0 80px rgba(59,130,246,0.5)']),
         }}
         transition={{ 
           duration: 

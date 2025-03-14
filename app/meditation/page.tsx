@@ -588,8 +588,8 @@ export default function MeditationPage() {
           setIsPlaying(false)
           // 播放结束音效
           playEndSound()
-          // 重置为上次选择的时间
-          return selectedDuration * 60
+          // 返回0，表示计时结束
+          return 0
         }
         return prev - 1
       })
@@ -769,7 +769,7 @@ export default function MeditationPage() {
     console.log('resetTimer 被调用', { duration, autoStart });
     
     try {
-      // 如果正在播放结束音频，不允许重置计时器
+    // 如果正在播放结束音频，不允许重置计时器
       if (isPlayingEndSound) {
         console.log('正在播放结束音效，不重置计时器');
         return;
@@ -787,8 +787,8 @@ export default function MeditationPage() {
           setSelectedGuidance(noneGuidance);
         }
       }
-      
-      // 重置引导音频状态
+    
+    // 重置引导音频状态
       console.log('重置引导音频状态');
       setGuideState('none');
       midSoundPlayedRef.current = false;
@@ -1116,7 +1116,11 @@ export default function MeditationPage() {
     console.log('togglePlayPause 被调用，当前状态:', { isPlaying, isPlayingEndSound, timeLeft });
     
     try {
-      if (isPlayingEndSound) {
+      // 如果时间为0，说明已经结束，需要完全重置
+      if (timeLeft === 0) {
+        console.log('计时器已结束，完全重置冥想状态');
+        resetMeditation();
+      } else if (isPlayingEndSound) {
         console.log('正在播放结束音效，停止结束音效');
         stopEndSound();
       } else if (isPlaying) {
@@ -1139,17 +1143,10 @@ export default function MeditationPage() {
           midSoundRef.current.pause();
         }
       } else {
-        // 如果时间为0，说明已经结束，需要重置
-        if (timeLeft === 0) {
-          console.log('计时器已结束，重置计时器');
-          // 重置为当前选择的时长，而不是默认时长
-          resetTimer(selectedDuration, true);
-        } else {
-          console.log('当前已暂停，切换到播放状态');
-          setIsPlaying(true);
-          // 直接调用 startTimer
-          startTimer();
-        }
+        console.log('当前已暂停，切换到播放状态');
+        setIsPlaying(true);
+        // 直接调用 startTimer
+        startTimer();
       }
     } catch (error) {
       console.error('togglePlayPause 执行出错:', error);
@@ -1171,6 +1168,20 @@ export default function MeditationPage() {
       if (selectedGuidance && selectedGuidance.id !== 'none') {
         console.log('设置引导状态为start，准备播放开始引导语');
         setGuideState('start');
+        
+        // 确保引导语音频已准备好
+        if (!startSoundRef.current || startSoundRef.current.error) {
+          console.log('开始引导语音频未准备好，尝试重新加载');
+          try {
+            const audioPath = `/ai-sounds/start_${selectedGuidance.id}.mp3?t=${new Date().getTime()}`;
+            startSoundRef.current = new Audio(audioPath);
+            startSoundRef.current.volume = volume / 100;
+            startSoundRef.current.load();
+            console.log('重新加载开始引导音频成功');
+          } catch (error) {
+            console.error('重新加载开始引导音频失败:', error);
+          }
+        }
       }
       
       // 设置中间引导语播放标记为未播放
@@ -1261,6 +1272,20 @@ export default function MeditationPage() {
             // 设置引导状态为'mid'
             console.log('设置引导状态为mid，准备播放中间引导语');
             setGuideState('mid');
+            
+            // 确保中间引导语音频已准备好
+            if (!midSoundRef.current || midSoundRef.current.error) {
+              console.log('中间引导语音频未准备好，尝试重新加载');
+              try {
+                const audioPath = `/ai-sounds/mid_${selectedGuidance.id}.mp3?t=${new Date().getTime()}`;
+                midSoundRef.current = new Audio(audioPath);
+                midSoundRef.current.volume = volume / 100;
+                midSoundRef.current.load();
+                console.log('重新加载中间引导音频成功');
+              } catch (error) {
+                console.error('重新加载中间引导音频失败:', error);
+              }
+            }
           }
           
           return newTime;
@@ -1327,12 +1352,13 @@ export default function MeditationPage() {
       console.log('开始播放结束音效');
       endSoundSource.start(currentTime);
       
-      // 设置一个定时器，在音频播放完成后重置状态
-      console.log('设置定时器，在音频播放完成后重置状态');
+      // 设置一个定时器，在音频播放完成后只重置引导状态，但保持isPlayingEndSound为true
+      // 这样用户必须点击重置按钮才能完全重置冥想状态
+      console.log('设置定时器，在音频播放完成后重置引导状态');
       setTimeout(() => {
         console.log('结束引导语播放完成');
         setGuideState('none');
-        setIsPlayingEndSound(false);
+        // 不重置isPlayingEndSound，让用户必须点击重置按钮
       }, endSoundDuration * 1000 + 500); // 添加500ms的缓冲时间
       
     } catch (error) {
@@ -1340,6 +1366,92 @@ export default function MeditationPage() {
       // 出错时重置状态
       setGuideState('none');
       setIsPlayingEndSound(false);
+    }
+  };
+
+  // 完全重置冥想状态
+  const resetMeditation = () => {
+    console.log('resetMeditation 被调用，完全重置冥想状态');
+    
+    try {
+      // 停止所有音频播放
+      // 1. 停止背景音效
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      
+      // 2. 停止引导语音频
+      if (startSoundRef.current) {
+        startSoundRef.current.pause();
+        startSoundRef.current.currentTime = 0; // 重置音频播放位置
+      }
+      if (midSoundRef.current) {
+        midSoundRef.current.pause();
+        midSoundRef.current.currentTime = 0; // 重置音频播放位置
+      }
+      
+      // 3. 停止结束音效
+      activeAudioSourcesRef.current.forEach(source => {
+        try {
+          source.stop();
+        } catch (error) {
+          console.error('停止音频源失败:', error);
+        }
+      });
+      activeAudioSourcesRef.current = [];
+      
+      // 重置所有状态
+      setIsPlayingEndSound(false);
+      setGuideState('none');
+      setTimeLeft(selectedDuration * 60);
+      setIsPlaying(false);
+      midSoundPlayedRef.current = false;
+      audioPositionRef.current = {start: 0, mid: 0, end: 0};
+      
+      // 清除计时器
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // 重新加载引导语音频，确保下次可以正常播放
+      if (selectedGuidance && selectedGuidance.id !== 'none') {
+        // 重新加载开始引导音频
+        try {
+          const startAudioPath = `/ai-sounds/start_${selectedGuidance.id}.mp3?t=${new Date().getTime()}`;
+          if (startSoundRef.current) {
+            startSoundRef.current.src = startAudioPath;
+            startSoundRef.current.load();
+          } else {
+            startSoundRef.current = new Audio(startAudioPath);
+            startSoundRef.current.volume = volume / 100;
+            startSoundRef.current.load();
+          }
+          console.log('重置后重新加载开始引导音频:', startAudioPath);
+        } catch (error) {
+          console.error('重置后重新加载开始引导音频失败:', error);
+        }
+        
+        // 重新加载中间引导音频
+        try {
+          const midAudioPath = `/ai-sounds/mid_${selectedGuidance.id}.mp3?t=${new Date().getTime()}`;
+          if (midSoundRef.current) {
+            midSoundRef.current.src = midAudioPath;
+            midSoundRef.current.load();
+          } else {
+            midSoundRef.current = new Audio(midAudioPath);
+            midSoundRef.current.volume = volume / 100;
+            midSoundRef.current.load();
+          }
+          console.log('重置后重新加载中间引导音频:', midAudioPath);
+        } catch (error) {
+          console.error('重置后重新加载中间引导音频失败:', error);
+        }
+      }
+      
+      console.log('冥想状态已完全重置');
+    } catch (error) {
+      console.error('resetMeditation 执行出错:', error);
     }
   };
 
@@ -1381,17 +1493,17 @@ export default function MeditationPage() {
         </div>
 
       {/* 音频设置按钮组 - 固定在右上角 */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-1 sm:gap-2">
         {/* 背景音效选择 - 保持可用 */}
           <Dialog>
             <DialogTrigger asChild>
               <Button
               variant="outline" 
               size="sm"
-              className={`rounded-full ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
             >
-              <Music size={16} className="mr-1" />
-              {t("Sounds", "背景音效")}
+              <Music size={16} className="sm:mr-1" />
+              <span className="hidden sm:inline">{t("Sounds", "背景音效")}</span>
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
@@ -1532,14 +1644,14 @@ export default function MeditationPage() {
               variant="outline" 
               size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
               } ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
             >
-              <BookOpen size={16} className="mr-1" />
-              {t("Guidance", "引导语")}
+              <BookOpen size={16} className="sm:mr-1" />
+              <span className="hidden sm:inline">{t("Guidance", "引导语")}</span>
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
@@ -1607,14 +1719,14 @@ export default function MeditationPage() {
               variant="outline" 
                   size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
               } ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
             >
-              <span className="mr-1">{selectedDuration}</span>
-              {t("min", "分钟")}
+              <span className="sm:mr-1">{selectedDuration}</span>
+              <span className="hidden sm:inline">{t("min", "分钟")}</span>
                 </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md`}>
@@ -1698,7 +1810,7 @@ export default function MeditationPage() {
               variant="outline" 
               size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
@@ -1761,32 +1873,25 @@ export default function MeditationPage() {
           </DialogContent>
       </Dialog>
         
-        {/* 引导语显示开关 - 改为纵向文本按钮 */}
-        <motion.div 
-          className={`fixed right-8 top-1/2 -translate-y-1/2 flex flex-col items-center ${
+        {/* 引导语显示开关 - 改为悬浮按钮，在移动端位于底部，桌面端位于右侧 */}
+        <motion.button 
+          className={`fixed md:right-8 md:top-1/2 md:-translate-y-1/2 
+                     bottom-20 right-4 md:bottom-auto
+                     flex items-center justify-center p-3 rounded-full 
+                     shadow-lg ${
             isDarkThemeTop 
-              ? 'text-indigo-300/60' 
-              : 'text-blue-700/60'
-          } cursor-pointer z-50`}
+              ? 'bg-indigo-800/80 text-indigo-100 hover:bg-indigo-700/80' 
+              : 'bg-blue-500/80 text-white hover:bg-blue-600/80'
+          } z-50 backdrop-blur-sm`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
           onClick={() => setShowGuidance(!showGuidance)}
+          aria-label={showGuidance ? "隐藏引导语" : "显示引导语"}
         >
-          <span className="text-xs writing-mode-vertical tracking-wider">
-            {showGuidance ? "隐藏引导语" : "显示引导语"}
-          </span>
-        </motion.div>
+          <BookOpen size={20} />
+        </motion.button>
     </div>
-      
-      {/* 添加垂直文本的样式 */}
-      <style jsx global>{`
-        .writing-mode-vertical {
-          writing-mode: vertical-rl;
-          text-orientation: upright;
-          letter-spacing: 0.2em;
-        }
-      `}</style>
       
       {/* 主要内容区域 */}
       <div className={`relative min-h-screen flex flex-col items-center justify-center overflow-hidden ${themeStyles.background}`}>
@@ -1838,29 +1943,50 @@ export default function MeditationPage() {
           />
         </div>
         
-        {/* 呼吸球部分 */}
-        <div className="relative z-20 w-[70vmin] h-[70vmin] flex items-center justify-center">
+        {/* 呼吸球部分 - 调整大小以适应不同屏幕 */}
+        <div className="relative w-[80vmin] h-[80vmin] md:w-[75vmin] md:h-[75vmin] lg:w-[70vmin] lg:h-[70vmin] flex items-center justify-center">
+          {/* 使用 BreathingSphere 组件 */}
+          <div className="z-10 absolute inset-0">
+            <BreathingSphere 
+              isPlaying={true} 
+              showText={false} 
+              customText={{
+                inhale: "冥想中...吸气",
+                exhale: "冥想中...呼气",
+                paused: "冥想，静心开始。"
+              }}
+              size="large"
+              position="center"
+            />
+          </div>
+
           {/* 固定位置的内容 - 使用绝对定位确保不会抖动 */}
           <div className="absolute inset-0 z-30">
             <div className="relative w-full h-full flex flex-col items-center">
-              {/* 计时器显示 - 放在正中间偏上 */}
+              {/* 计时器显示 - 放在正中间偏上，移动端缩小 */}
               <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                <div className={`text-6xl md:text-7xl lg:text-8xl font-light tracking-widest ${themeStyles.primaryText}`}>
+                <div className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-widest ${themeStyles.primaryText} drop-shadow-lg`}>
                   {formatTime(timeLeft)}
                 </div>
               </div>
               
-              {/* 播放/暂停按钮 - 放在文本下方固定距离 */}
-              <div className="absolute top-[65%] left-1/2 -translate-x-1/2 text-center">
+              {/* 播放/暂停按钮 - 放在文本下方固定距离，移动端缩小并调整位置 */}
+              <div className="absolute top-[58%] sm:top-[62%] md:top-[65%] left-1/2 -translate-x-1/2 text-center">
                 <Button
-                  disabled={isPlayingEndSound && guideState !== 'end'}
+                  disabled={(isPlayingEndSound && guideState !== 'end') && timeLeft !== 0}
                   onClick={(e) => {
                     e.preventDefault(); // 防止事件冒泡
                     console.log('播放/暂停按钮被点击');
                     try {
-                      // 直接设置状态，而不是调用 togglePlayPause
-                      if (isPlaying) {
-                        console.log('直接暂停播放');
+                      // 如果时间为0，说明已经结束，需要完全重置
+                      if (timeLeft === 0) {
+                        console.log('计时器已结束，完全重置冥想状态');
+                        resetMeditation();
+                      } else if (isPlayingEndSound) {
+                        console.log('正在播放结束音效，停止结束音效');
+                        stopEndSound();
+                      } else if (isPlaying) {
+                        console.log('当前正在播放，切换到暂停状态');
                         setIsPlaying(false);
                         if (timerRef.current) {
                           clearInterval(timerRef.current);
@@ -1879,86 +2005,108 @@ export default function MeditationPage() {
                           midSoundRef.current.pause();
                         }
                       } else {
-                        // 如果时间为0，说明已经结束，需要重置
-                        if (timeLeft === 0) {
-                          console.log('直接重置计时器');
-                          // 重置为当前选择的时长
-                          setTimeLeft(selectedDuration * 60);
-                          // 重置引导音频状态
-                          setGuideState('none');
-                          midSoundPlayedRef.current = false;
-                          audioPositionRef.current = {start: 0, mid: 0, end: 0};
-                          // 设置播放状态
-                          setIsPlaying(true);
-                          // 使用 setTimeout 确保状态更新后再启动计时器
-                          setTimeout(() => {
-                            startTimer();
-                          }, 100);
-                        } else {
-                          console.log('直接开始播放');
-                          setIsPlaying(true);
-                          // 使用 setTimeout 确保状态更新后再启动计时器
-                          setTimeout(() => {
-                            startTimer();
-                          }, 100);
-                        }
+                        console.log('当前已暂停，切换到播放状态');
+                        setIsPlaying(true);
+                        // 使用 setTimeout 确保状态更新后再启动计时器
+                        setTimeout(() => {
+                          startTimer();
+                        }, 100);
                       }
                     } catch (error) {
                       console.error('按钮点击处理出错:', error);
                     }
                   }}
-                  className={`rounded-full w-14 h-14 ${
-                    isPlayingEndSound 
+                  className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shadow-lg transition-all hover:scale-105 ${
+                    (isPlayingEndSound && guideState !== 'end') && timeLeft !== 0
                       ? (isDarkThemeTop ? 'bg-indigo-800/50 text-indigo-300 cursor-not-allowed' : 'bg-blue-300/50 text-blue-700 cursor-not-allowed')
                       : isPlaying
                         ? (isDarkThemeTop ? 'bg-indigo-700 hover:bg-indigo-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white')
-                        : (isDarkThemeTop ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-blue-500 hover:bg-blue-400 text-white')
+                        : timeLeft === 0
+                          ? (isDarkThemeTop ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-purple-500 hover:bg-purple-400 text-white')
+                          : (isDarkThemeTop ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-blue-500 hover:bg-blue-400 text-white')
                   }`}
                 >
-                  {isPlaying ? <Pause size={24} /> : 
-                   timeLeft === 0 ? <RotateCcw size={24} /> : <Play size={24} />}
+                  {isPlaying ? <Pause size={20} className="sm:size-24" /> : 
+                   timeLeft === 0 ? <RotateCcw size={20} className="sm:size-24" /> : <Play size={20} className="sm:size-24" />}
                 </Button>
               </div>
             </div>
           </div>
-
-          {/* 使用 BreathingSphere 组件 */}
-          <BreathingSphere 
-            isPlaying={isPlaying}
-            showText={true}
-            customText={{
-              inhale: "冥想中...吸气",
-              exhale: "冥想中...呼气",
-              paused: "冥想，静心开始。"
-            }}
-            size="large"
-            position="center"
-          />
         </div>
         
-        {/* 引导文本显示 - 改为右侧固定侧边栏 */}
+        {/* 引导文本显示 - 改为抽屉组件，在移动端从底部弹出，桌面端从右侧弹出 */}
         <AnimatePresence>
           {showGuidance && selectedGuidance && (
-            <motion.div
-              initial={{ x: 300, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 300, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              className={`fixed right-0 top-0 h-full w-80 ${
-                isDarkThemeTop 
-                  ? 'bg-indigo-950/95 border-l border-indigo-800/30 text-indigo-100' 
-                  : 'bg-white/95 border-l border-blue-200/50 text-slate-800'
-              } backdrop-blur-sm z-30 p-6 pt-20 overflow-y-auto`}
-            >
-              <div className="prose prose-sm max-w-none">
-                <h3 className={`${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-700'} mb-4`}>
-                  {selectedGuidance.title}
-                </h3>
-                <p className="text-sm leading-relaxed whitespace-pre-line">
-                  {selectedGuidance.content}
-                </p>
-              </div>
-            </motion.div>
+            <>
+              {/* 遮罩层 - 点击关闭抽屉 */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                onClick={() => setShowGuidance(false)}
+              />
+              
+              {/* 桌面端 - 从右侧滑入 */}
+              <motion.div
+                className={`fixed right-0 top-0 h-full w-80 md:block hidden
+                  ${isDarkThemeTop 
+                    ? 'bg-indigo-950/95 border-l border-indigo-800/30 text-indigo-100' 
+                    : 'bg-white/95 border-l border-blue-200/50 text-slate-800'
+                  } z-50 p-6 pt-20 overflow-y-auto`}
+                initial={{ x: 300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 300, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+              >
+                <button 
+                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/10"
+                  onClick={() => setShowGuidance(false)}
+                >
+                  <X size={20} />
+                </button>
+                <div className="prose prose-sm max-w-none">
+                  <h3 className={`${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-700'} mb-4`}>
+                    {selectedGuidance.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-line">
+                    {selectedGuidance.content}
+                  </p>
+                </div>
+              </motion.div>
+              
+              {/* 移动端 - 从底部滑入 */}
+              <motion.div
+                className={`fixed bottom-0 left-0 right-0 max-h-[70vh] md:hidden
+                  ${isDarkThemeTop 
+                    ? 'bg-indigo-950/95 border-t border-indigo-800/30 text-indigo-100' 
+                    : 'bg-white/95 border-t border-blue-200/50 text-slate-800'
+                  } z-50 p-6 pt-10 pb-16 overflow-y-auto rounded-t-2xl`}
+                initial={{ y: 300, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 300, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+              >
+                {/* 抽屉把手 */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-gray-400/30"></div>
+                
+                <button 
+                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/10"
+                  onClick={() => setShowGuidance(false)}
+                >
+                  <X size={20} />
+                </button>
+                
+                <div className="prose prose-sm max-w-none">
+                  <h3 className={`${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-700'} mb-4`}>
+                    {selectedGuidance.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-line">
+                    {selectedGuidance.content}
+                  </p>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

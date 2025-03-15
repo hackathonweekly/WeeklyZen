@@ -24,7 +24,9 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: '/favicon.ico',
+    icon: '/WZ.ico',
+    shortcut: '/WZ.ico',
+    apple: '/WZ.ico',
   },
 }
 
@@ -36,7 +38,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
       <html lang="zh-CN" suppressHydrationWarning>
-        <head />
+        <head>
+          <link rel="icon" href="/WZ.ico?v=2" />
+        </head>
         <body
           className={cn(
             'min-h-screen bg-background font-sans antialiased',

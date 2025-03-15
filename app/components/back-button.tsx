@@ -1,14 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useAppTheme } from "@/contexts/theme-context";
 
-export function BackButton() {
+interface BackButtonProps {
+  onClick?: () => void;
+}
+
+export function BackButton({ onClick }: BackButtonProps) {
   const router = useRouter();
   const { isDarkTheme } = useAppTheme();
 
-  const handleBack = () => {
-    router.push('/');
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      router.push('/');
+    }
   };
 
   return (
@@ -20,9 +28,9 @@ export function BackButton() {
         ? 'bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/50 active:bg-indigo-700/60' 
         : 'bg-blue-100/80 text-blue-700 hover:bg-blue-200/90 active:bg-blue-300/80'}
       transition-colors duration-200`}
-      onClick={handleBack}
+      onClick={handleClick}
     >
-      <ChevronRight className="w-5 h-5" />
+      <ArrowLeft className="h-4 w-4" />
     </Button>
   );
 } 

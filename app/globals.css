@@ -1,76 +1,148 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
     --background: 150 50% 98%;
     --foreground: 150 10% 10%;
- 
+
     --card: 150 50% 98%;
     --card-foreground: 150 10% 10%;
- 
+
     --popover: 150 50% 98%;
     --popover-foreground: 150 10% 10%;
- 
+
     --primary: 150 60% 40%;
     --primary-foreground: 150 10% 98%;
- 
+
     --secondary: 150 20% 90%;
     --secondary-foreground: 150 10% 10%;
- 
+
     --muted: 150 20% 90%;
     --muted-foreground: 150 10% 40%;
- 
+
     --accent: 150 20% 90%;
     --accent-foreground: 150 10% 10%;
- 
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 150 20% 85%;
     --input: 150 20% 85%;
     --ring: 150 60% 40%;
- 
+
     --radius: 0.75rem;
   }
- 
+
   .dark {
     --background: 150 30% 5%;
     --foreground: 150 10% 98%;
- 
+
     --card: 150 30% 5%;
     --card-foreground: 150 10% 98%;
- 
+
     --popover: 150 30% 5%;
     --popover-foreground: 150 10% 98%;
- 
+
     --primary: 150 60% 50%;
     --primary-foreground: 150 10% 5%;
- 
+
     --secondary: 150 20% 20%;
     --secondary-foreground: 150 10% 98%;
- 
+
     --muted: 150 20% 20%;
     --muted-foreground: 150 10% 60%;
- 
+
     --accent: 150 20% 20%;
     --accent-foreground: 150 10% 98%;
- 
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 150 10% 98%;
- 
+
     --border: 150 20% 20%;
     --input: 150 20% 20%;
     --ring: 150 60% 50%;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* 平滑主题切换 */
+  html {
+    @apply transition-colors duration-300;
+  }
+
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar {
+    @apply h-2 w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  /* 亮色模式滚动条 */
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300/80 transition-colors hover:bg-slate-400/80;
+  }
+
+  /* 暗色模式滚动条 */
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/80 hover:bg-slate-600/80;
+  }
+
+  /* 文本选择样式 */
+  ::selection {
+    @apply bg-blue-100 text-blue-900;
+  }
+
+  .dark ::selection {
+    @apply bg-indigo-900/70 text-indigo-100;
+  }
+}
+
+/* 自定义动画效果 */
+@layer utilities {
+  /* 渐变边框动画 */
+  .animate-border-glow {
+    @apply relative;
+  }
+
+  .animate-border-glow::before {
+    content: '';
+    @apply absolute -inset-[1px] rounded-[inherit] bg-gradient-to-r opacity-0 transition-opacity duration-300;
+  }
+
+  .animate-border-glow:hover::before {
+    @apply opacity-100;
+  }
+
+  /* 亮色模式渐变 */
+  .animate-border-glow::before {
+    @apply from-blue-300/50 via-blue-500/50 to-blue-300/50;
+  }
+
+  /* 暗色模式渐变 */
+  .dark .animate-border-glow::before {
+    @apply from-indigo-700/30 via-indigo-500/30 to-indigo-700/30;
+  }
+
+  /* 焦点状态改进 */
+  .focus-ring {
+    @apply transition-shadow duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white/10 dark:focus-visible:ring-indigo-500/50 dark:focus-visible:ring-offset-slate-900/10;
+  }
+}
+
+/* 减少动画对用户的干扰 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    @apply !important animate-none transition-none !important;
   }
 }

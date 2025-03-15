@@ -188,7 +188,7 @@ export default function IndexPage() {
           }}
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
         >
-          <span className="text-xs mb-2">{t("了解更多", "Learn more")}</span>
+          <span className="text-xs mb-2 text-center">{t("了解更多", "Learn more")}</span>
           <ChevronDown size={20} />
         </motion.div>
       </section>
@@ -506,12 +506,12 @@ export default function IndexPage() {
       <footer className={`py-12 border-t ${isDarkTheme ? 'border-blue-800/20' : 'border-blue-300/30'}`}>
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
+            <div className="mb-6 md:mb-0 text-center md:text-left">
               <div className={`text-lg font-medium ${themeStyles.primaryText}`}>WeeklyZen</div>
               <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>{t("周周冥想小组", "Weekly Meditation Group")}</div>
             </div>
             
-            <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>
+            <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} text-center md:text-right`}>
               <p className="mb-2">© 2024 WeeklyZen</p>
               <p>{t("版权声明: CC BY-NC-SA 4.0", "License: CC BY-NC-SA 4.0")}</p>
             </div>

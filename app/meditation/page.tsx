@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { X, Volume2, VolumeX, Settings, Music, ChevronRight, Palette, BookOpen, Play, Pause, Check, RotateCcw } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { X, Volume2, VolumeX, Settings, Music, ChevronRight, Palette, BookOpen, Play, Pause, Check, RotateCcw, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -21,6 +21,7 @@ import { BackButton } from '../../components/back-button'
 import { useGuidanceTexts, guidanceTexts as defaultGuidanceTexts } from '@/app/guidance'
 import { SoundIcon } from '@/app/SoundIcon'
 import { BreathingSphere } from '@/components/breathing-sphere'
+import Link from 'next/link'
 
 // 引导语内容
 const guidances = [
@@ -72,6 +73,211 @@ interface GuidanceType {
 }
 
 export default function MeditationPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  
+  // 添加路由跳转处理函数
+  const handleNavigate = async (to: string) => {
+    console.log('准备跳转到:', to);
+    
+    // 1. 停止计时
+    if (isPlaying) {
+      setIsPlaying(false);
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // 2. 停止所有音频
+    // 2.1 背景音效
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    // 2.2 开始引导语音频
+    if (startSoundRef.current) {
+      startSoundRef.current.pause();
+      startSoundRef.current.currentTime = 0;
+    }
+    
+    // 2.3 中间引导语音频
+    if (midSoundRef.current) {
+      midSoundRef.current.pause();
+      midSoundRef.current.currentTime = 0;
+    }
+    
+    // 2.4 结束引导语音频
+    if (endSoundRef.current) {
+      endSoundRef.current.pause();
+      endSoundRef.current.currentTime = 0;
+    }
+    
+    // 2.5 额外的结束引导语音频
+    if (endGuideSoundRef.current) {
+      endGuideSoundRef.current.pause();
+      endGuideSoundRef.current.currentTime = 0;
+    }
+    
+    // 3. 停止所有活跃的音频源
+    if (activeAudioSourcesRef.current && activeAudioSourcesRef.current.length > 0) {
+      activeAudioSourcesRef.current.forEach(source => {
+        try {
+          if (source) {
+            source.stop();
+            source.disconnect();
+          }
+        } catch (error) {
+          console.error('停止音频源失败:', error);
+        }
+      });
+      activeAudioSourcesRef.current = [];
+    }
+    
+    // 4. 关闭音频上下文
+    if (audioContextRef.current) {
+      try {
+        await audioContextRef.current.close();
+        audioContextRef.current = null;
+      } catch (error) {
+        console.error('关闭音频上下文失败:', error);
+      }
+    }
+    
+    // 5. 重置状态
+    setIsPlayingEndSound(false);
+    setGuideState('none');
+    midSoundPlayedRef.current = false;
+    audioPositionRef.current = {start: 0, mid: 0, end: 0};
+    
+    // 6. 清除呼吸动画的定时器
+    if (breathingIntervalRef.current) {
+      clearInterval(breathingIntervalRef.current);
+      breathingIntervalRef.current = null;
+    }
+    
+    // 等待一小段时间确保清理完成
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 最后执行跳转
+    console.log('清理完成，开始跳转');
+    router.push(to);
+  };
+  
+  // 添加路由监听
+  useEffect(() => {
+    // 保存当前路径
+    const currentPath = pathname
+    
+    // 返回清理函数
+    return () => {
+      // 无论路径是否变化，都执行完整清理
+      console.log('路由变更或组件卸载，执行完整清理...');
+      
+      try {
+        // 1. 停止计时器
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        
+        // 2. 停止并释放所有音频资源
+        // 2.1 背景音效
+        if (audioRef.current) {
+          console.log('停止背景音效');
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current.src = '';
+          audioRef.current = null;
+        }
+        
+        // 2.2 开始引导语音频
+        if (startSoundRef.current) {
+          console.log('停止开始引导语音频');
+          startSoundRef.current.pause();
+          startSoundRef.current.currentTime = 0;
+          startSoundRef.current.src = '';
+          startSoundRef.current = null;
+        }
+        
+        // 2.3 中间引导语音频
+        if (midSoundRef.current) {
+          console.log('停止中间引导语音频');
+          midSoundRef.current.pause();
+          midSoundRef.current.currentTime = 0;
+          midSoundRef.current.src = '';
+          midSoundRef.current = null;
+        }
+        
+        // 2.4 结束引导语音频
+        if (endSoundRef.current) {
+          console.log('停止结束引导语音频');
+          endSoundRef.current.pause();
+          endSoundRef.current.currentTime = 0;
+          endSoundRef.current.src = '';
+          endSoundRef.current = null;
+        }
+        
+        // 2.5 额外的结束引导语音频
+        if (endGuideSoundRef.current) {
+          console.log('停止额外的结束引导语音频');
+          endGuideSoundRef.current.pause();
+          endGuideSoundRef.current.currentTime = 0;
+          endGuideSoundRef.current.src = '';
+          endGuideSoundRef.current = null;
+        }
+        
+        // 2.6 停止所有活跃的音频源
+        if (activeAudioSourcesRef.current && activeAudioSourcesRef.current.length > 0) {
+          console.log(`停止 ${activeAudioSourcesRef.current.length} 个活跃音频源`);
+          activeAudioSourcesRef.current.forEach(source => {
+            try {
+              if (source) {
+                source.stop();
+                source.disconnect();
+              }
+            } catch (error) {
+              console.error('停止音频源失败:', error);
+            }
+          });
+          activeAudioSourcesRef.current = [];
+        }
+        
+        // 2.7 关闭音频上下文
+        if (audioContextRef.current) {
+          console.log('关闭音频上下文');
+          audioContextRef.current.close().catch(console.error);
+          audioContextRef.current = null;
+        }
+        
+        // 2.8 清除音频缓冲区
+        console.log('清除音频缓冲区');
+        endSoundBufferRef.current = null;
+        templeBellsBufferRef.current = null;
+        
+        // 3. 重置所有状态
+        console.log('重置所有状态');
+        setIsPlaying(false);
+        setIsPlayingEndSound(false);
+        setGuideState('none');
+        midSoundPlayedRef.current = false;
+        audioPositionRef.current = {start: 0, mid: 0, end: 0};
+        
+        // 4. 清除呼吸动画的定时器
+        if (breathingIntervalRef.current) {
+          console.log('清除呼吸动画定时器');
+          clearInterval(breathingIntervalRef.current);
+          breathingIntervalRef.current = null;
+        }
+        
+        console.log('路由变更时的资源清理完成');
+      } catch (error) {
+        console.error('路由变更时清理资源失败:', error);
+      }
+    };
+  }, []); // 空依赖数组，确保清理函数只在组件卸载时执行一次
+  
   // 清理资源的函数
   const cleanup = () => {
     if (audioRef.current) {
@@ -153,6 +359,90 @@ export default function MeditationPage() {
   const { isDarkTheme: themeIsDark, themeStyles: themeStyles } = useAppTheme();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  
+  // 在组件的最顶部添加一个 useEffect 用于组件卸载时的清理
+  useEffect(() => {
+    // 返回清理函数
+    return () => {
+      console.log('冥想页面组件卸载，执行清理...');
+      
+      try {
+        // 停止计时器
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        
+        // 停止并释放所有音频资源
+        // 1. 背景音效
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+          audioRef.current = null;
+        }
+        
+        // 2. 开始引导语音频
+        if (startSoundRef.current) {
+          startSoundRef.current.pause();
+          startSoundRef.current.src = '';
+          startSoundRef.current = null;
+        }
+        
+        // 3. 中间引导语音频
+        if (midSoundRef.current) {
+          midSoundRef.current.pause();
+          midSoundRef.current.src = '';
+          midSoundRef.current = null;
+        }
+        
+        // 4. 结束引导语音频
+        if (endSoundRef.current) {
+          endSoundRef.current.pause();
+          endSoundRef.current.src = '';
+          endSoundRef.current = null;
+        }
+        
+        // 5. 停止所有活跃的音频源
+        if (activeAudioSourcesRef.current.length > 0) {
+    activeAudioSourcesRef.current.forEach(source => {
+      try {
+              source.stop();
+      } catch (error) {
+              console.error('停止音频源失败:', error);
+            }
+          });
+          activeAudioSourcesRef.current = [];
+        }
+        
+        // 6. 关闭音频上下文
+        if (audioContextRef.current) {
+          audioContextRef.current.close().catch(console.error);
+          audioContextRef.current = null;
+        }
+        
+        // 7. 清除音频缓冲区
+        endSoundBufferRef.current = null;
+        templeBellsBufferRef.current = null;
+        
+        // 8. 重置所有状态
+        setIsPlaying(false);
+        setIsPlayingEndSound(false);
+        setGuideState('none');
+        midSoundPlayedRef.current = false;
+        audioPositionRef.current = {start: 0, mid: 0, end: 0};
+        
+        // 9. 清除呼吸动画的定时器
+        if (breathingIntervalRef.current) {
+          clearInterval(breathingIntervalRef.current);
+          breathingIntervalRef.current = null;
+        }
+        
+        console.log('冥想页面资源清理完成');
+      } catch (error) {
+        console.error('清理资源时出错:', error);
+      }
+    };
+  }, []); // 空依赖数组，确保清理函数只被设置一次
   
   // 确保组件挂载后再渲染
   useEffect(() => {
@@ -794,31 +1084,6 @@ export default function MeditationPage() {
       midSoundPlayedRef.current = false;
       audioPositionRef.current = {start: 0, mid: 0, end: 0};
       
-      // 如果背景音效已暂停，重新开始播放
-      if (selectedSound && audioRef.current && audioRef.current.paused) {
-        console.log('重新播放背景音效');
-        audioRef.current.volume = volume / 100;
-        
-        try {
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.error('重新播放背景音效失败:', error);
-              // 尝试再次播放
-              setTimeout(() => {
-                if (audioRef.current) {
-                  audioRef.current.play().catch(e => 
-                    console.error('重试播放背景音效失败:', e)
-                  );
-                }
-              }, 1000);
-            });
-          }
-        } catch (error) {
-          console.error('播放背景音效时出错:', error);
-        }
-      }
-      
       // 设置isPlaying状态
       console.log('设置播放状态为:', autoStart);
       setIsPlaying(autoStart);
@@ -956,8 +1221,15 @@ export default function MeditationPage() {
   // 使用 hook 加载引导语内容
   const { guidanceTexts: dynamicGuidanceTexts, loading: guidanceLoading, error: guidanceError } = useGuidanceTexts();
   
-  // 合并引导语数据，优先使用动态加载的内容
-  const guidances = guidanceLoading ? defaultGuidanceTexts : dynamicGuidanceTexts;
+  // 合并引导语数据，优先使用动态加载的内容，如果还在加载则使用默认内容
+  const guidances = dynamicGuidanceTexts.length > 0 ? dynamicGuidanceTexts : defaultGuidanceTexts;
+  
+  // 处理引导语加载错误
+  useEffect(() => {
+    if (guidanceError) {
+      toast.error(`加载引导语内容失败: ${guidanceError}`);
+    }
+  }, [guidanceError]);
   
   // 加载引导语文本
   useEffect(() => {
@@ -1302,7 +1574,7 @@ export default function MeditationPage() {
     
     try {
       // 确保音频上下文和缓冲区已加载
-      if (!audioContextRef.current || !endSoundBufferRef.current) {
+      if (!audioContextRef.current || !endSoundBufferRef.current || !templeBellsBufferRef.current) {
         console.error('音频资源未加载完成');
         return;
       }
@@ -1327,8 +1599,8 @@ export default function MeditationPage() {
       const currentTime = audioContextRef.current.currentTime;
       console.log('当前音频上下文时间:', currentTime);
       
-      // 创建音频源节点（结束音效）
-      console.log('创建音频源节点');
+      // 创建音频源节点（结束引导语）
+      console.log('创建结束引导语音频源节点');
       const endSoundSource = audioContextRef.current.createBufferSource();
       endSoundSource.buffer = endSoundBufferRef.current;
       
@@ -1344,22 +1616,44 @@ export default function MeditationPage() {
       endSoundSource.connect(endSoundGain);
       endSoundGain.connect(audioContextRef.current.destination);
       
-      // 获取音频的持续时间
+      // 获取结束引导语的持续时间
       const endSoundDuration = endSoundBufferRef.current.duration;
-      console.log('结束音效持续时间:', endSoundDuration);
+      console.log('结束引导语持续时间:', endSoundDuration);
+
+      // 创建钟声音频源节点
+      console.log('创建钟声音频源节点');
+      const templeBellsSource = audioContextRef.current.createBufferSource();
+      templeBellsSource.buffer = templeBellsBufferRef.current;
       
-      // 开始播放
-      console.log('开始播放结束音效');
+      // 添加到活跃音频源列表
+      activeAudioSourcesRef.current.push(templeBellsSource);
+      
+      // 创建钟声的增益节点
+      const templeBellsGain = audioContextRef.current.createGain();
+      templeBellsGain.gain.value = volume / 100;
+      
+      // 连接钟声节点
+      templeBellsSource.connect(templeBellsGain);
+      templeBellsGain.connect(audioContextRef.current.destination);
+      
+      // 开始播放结束引导语
+      console.log('开始播放结束引导语');
       endSoundSource.start(currentTime);
       
-      // 设置一个定时器，在音频播放完成后只重置引导状态，但保持isPlayingEndSound为true
-      // 这样用户必须点击重置按钮才能完全重置冥想状态
+      // 在结束引导语播放完成后播放钟声
+      console.log('安排钟声在结束引导语之后播放');
+      templeBellsSource.start(currentTime + endSoundDuration);
+      
+      // 计算总持续时间（结束引导语 + 钟声）
+      const totalDuration = endSoundDuration + templeBellsBufferRef.current.duration;
+      
+      // 设置一个定时器，在所有音频播放完成后重置状态
       console.log('设置定时器，在音频播放完成后重置引导状态');
       setTimeout(() => {
-        console.log('结束引导语播放完成');
+        console.log('结束音效播放完成');
         setGuideState('none');
         // 不重置isPlayingEndSound，让用户必须点击重置按钮
-      }, endSoundDuration * 1000 + 500); // 添加500ms的缓冲时间
+      }, totalDuration * 1000 + 500); // 添加500ms的缓冲时间
       
     } catch (error) {
       console.error('结束音效播放失败:', error);
@@ -1455,56 +1749,47 @@ export default function MeditationPage() {
     }
   };
 
-  // 在 UI 中显示加载状态
-  if (guidanceLoading) {
+  // 修改 Link 组件的使用
+  const CustomLink = ({ href, children, ...props }: { href: string; children: ReactNode; [key: string]: any }) => {
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      handleNavigate(href);
+    };
+    
     return (
-      <div className={`min-h-screen ${themeStyles.background} ${themeStyles.text} flex items-center justify-center`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-current mx-auto mb-4"></div>
-          <p>加载引导语内容中...</p>
-                    </div>
-                  </div>
+      <a href={href} onClick={handleClick} {...props}>
+        {children}
+      </a>
     );
-  }
-  
-  // 显示错误信息
-  if (guidanceError) {
-    return (
-      <div className={`min-h-screen ${themeStyles.background} ${themeStyles.text} flex items-center justify-center`}>
-        <div className="text-center p-4 max-w-md">
-          <p className="text-red-500 mb-4">加载引导语内容失败</p>
-          <p>{guidanceError}</p>
-          <Button 
-            className="mt-4"
-            onClick={() => window.location.reload()}
-          >
-            重试
-          </Button>
-              </div>
-            </div>
-    );
-  }
+  };
 
   return (
     <div className={`min-h-screen ${themeStyles.background} ${themeStyles.text}`}>
       {/* 返回按钮 */}
       <div className="fixed top-4 left-4 z-50">
-        <BackButton />
-        </div>
+        <Button
+          variant="outline"
+          size="sm" 
+          className="rounded-full h-9 w-9"
+          onClick={() => handleNavigate('/')}
+        >
+          <ArrowLeft size={16} />
+        </Button>
+      </div>
 
       {/* 音频设置按钮组 - 固定在右上角 */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-1 sm:gap-2">
         {/* 背景音效选择 - 保持可用 */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button
+                  <Button
               variant="outline" 
-              size="sm"
-              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
-            >
+                    size="sm"
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto sm:py-2 ${isDarkThemeTop ? 'bg-indigo-950/50 border-indigo-600/30 text-indigo-300 hover:bg-indigo-900/50' : 'bg-blue-50/80 border-blue-300/50 text-blue-700 hover:bg-blue-100/80'}`}
+                  >
               <Music size={16} className="sm:mr-1" />
               <span className="hidden sm:inline">{t("Sounds", "背景音效")}</span>
-              </Button>
+                  </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
               <DialogHeader>
@@ -1527,7 +1812,7 @@ export default function MeditationPage() {
 
               {/* 分类标签页 */}
               <Tabs defaultValue="nature" className="w-full">
-                <TabsList className="grid grid-cols-4 mb-4">
+                <TabsList className="grid grid-cols-5 mb-4 ">
                   <TabsTrigger value="nature" className={`${isDarkThemeTop ? 'data-[state=active]:bg-indigo-800/50' : 'data-[state=active]:bg-blue-100'}`}>
                     自然
                   </TabsTrigger>
@@ -1537,16 +1822,19 @@ export default function MeditationPage() {
                   <TabsTrigger value="city" className={`${isDarkThemeTop ? 'data-[state=active]:bg-indigo-800/50' : 'data-[state=active]:bg-blue-100'}`}>
                     城市
                   </TabsTrigger>
-                  <TabsTrigger value="end" className={`${isDarkThemeTop ? 'data-[state=active]:bg-indigo-800/50' : 'data-[state=active]:bg-blue-100'}`}>
-                    结束
+                  {/* <TabsTrigger value="end" className={`${isDarkThemeTop ? 'data-[state=active]:bg-indigo-800/50' : 'data-[state=active]:bg-blue-100'}`}>
+                    结束声
                   </TabsTrigger>
+                  <TabsTrigger value="other" className={`${isDarkThemeTop ? 'data-[state=active]:bg-indigo-800/50' : 'data-[state=active]:bg-blue-100'}`}>
+                    其他
+                  </TabsTrigger> */}
                 </TabsList>
 
                 {/* 自然音效 */}
-                <TabsContent value="nature" className="mt-0">
+                <TabsContent value="nature" className="mt-0 max-h-[240px] overflow-y-auto pr-2">
                   <div className="grid grid-cols-2 gap-2">
                     {sounds
-                      .filter(sound => ['bird', 'stream', 'leaves', 'campfire', 'forest-night', 'waves', 'breeze', 'waterfall', 'beach'].includes(sound.id))
+                      .filter(sound => sound.category === '自然')
                       .map((sound) => (
                   <Button
                           key={sound.id}
@@ -1562,16 +1850,16 @@ export default function MeditationPage() {
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
                   </Button>
                 ))}
-              </div>
+          </div>
                 </TabsContent>
 
                 {/* 雨声 */}
-                <TabsContent value="rain" className="mt-0">
+                <TabsContent value="rain" className="mt-0 max-h-[240px] overflow-y-auto pr-2">
                   <div className="grid grid-cols-2 gap-2">
                     {sounds
-                      .filter(sound => ['light-rain', 'heavy-rain', 'roof-rain', 'window-rain', 'thunder-rain', 'rain-leaves', 'rain-puddle'].includes(sound.id))
+                      .filter(sound => sound.category === '雨声')
                       .map((sound) => (
-              <Button
+                        <Button
                           key={sound.id}
                           variant="outline"
                           className={`flex flex-col items-center justify-center p-4 h-auto ${
@@ -1583,16 +1871,39 @@ export default function MeditationPage() {
                         >
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
-              </Button>
+                        </Button>
+                      ))}
+                    </div>
+                </TabsContent>
+
+                {/* 城市 */}
+                <TabsContent value="city" className="mt-0 max-h-[240px] overflow-y-auto pr-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {sounds
+                      .filter(sound => sound.category === '城市')
+                      .map((sound) => (
+                      <Button
+                          key={sound.id}
+                          variant="outline"
+                          className={`flex flex-col items-center justify-center p-4 h-auto ${
+                            selectedSound?.id === sound.id 
+                              ? (isDarkThemeTop ? 'bg-indigo-800/30 border-indigo-600' : 'bg-blue-100 border-blue-400') 
+                              : (isDarkThemeTop ? 'border-indigo-800/30 hover:bg-indigo-900/50' : 'border-blue-200 hover:bg-blue-50')
+                          }`}
+                          onClick={() => handleSoundSelect(sound)}
+                        >
+                          <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
+                          <span className="text-sm">{t(sound.name, sound.name)}</span>
+                      </Button>
                     ))}
                   </div>
                 </TabsContent>
 
-                {/* 城市 */}
-                <TabsContent value="city" className="mt-0">
+                {/* 结束声 */}
+                <TabsContent value="end" className="mt-0 max-h-[240px] overflow-y-auto pr-2">
                   <div className="grid grid-cols-2 gap-2">
                     {sounds
-                      .filter(sound => ['city-traffic', 'cafe', 'keyboard', 'subway', 'park', 'train'].includes(sound.id))
+                      .filter(sound => sound.category === '结束声')
                       .map((sound) => (
                     <Button
                           key={sound.id}
@@ -1607,18 +1918,18 @@ export default function MeditationPage() {
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
                     </Button>
-                    ))}
+                      ))}
                     </div>
                 </TabsContent>
-
-                {/* 结束声 */}
-                <TabsContent value="end" className="mt-0">
+                
+                {/* 其他 */}
+                <TabsContent value="other" className="mt-0 max-h-[240px] overflow-y-auto pr-2">
                   <div className="grid grid-cols-2 gap-2">
-                        {sounds
-                      .filter(sound => ['temple-bells'].includes(sound.id))
+                    {sounds
+                      .filter(sound => !['自然', '雨声', '城市', '结束声'].includes(sound.category))
                       .map((sound) => (
-                            <Button
-                              key={sound.id}
+                    <Button
+                          key={sound.id}
                           variant="outline"
                           className={`flex flex-col items-center justify-center p-4 h-auto ${
                             selectedSound?.id === sound.id 
@@ -1629,10 +1940,10 @@ export default function MeditationPage() {
                         >
                           <SoundIcon iconType={sound.iconType} className={`text-2xl mb-2 ${isDarkThemeTop ? 'text-indigo-300' : 'text-blue-600'}`} />
                           <span className="text-sm">{t(sound.name, sound.name)}</span>
-                            </Button>
-                    ))}
-                      </div>
-                    </TabsContent>
+                    </Button>
+                      ))}
+                    </div>
+                </TabsContent>
               </Tabs>
           </DialogContent>
           </Dialog>
@@ -1644,7 +1955,7 @@ export default function MeditationPage() {
               variant="outline" 
               size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto sm:py-2 ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
@@ -1655,9 +1966,9 @@ export default function MeditationPage() {
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md max-h-[80vh] overflow-y-auto`}>
-                <DialogHeader>
+              <DialogHeader>
               <DialogTitle>{t("Choose Guidance", "选择引导语")}</DialogTitle>
-                </DialogHeader>
+              </DialogHeader>
             <div className="grid grid-cols-1 gap-2 mt-4">
               {/* 无引导选项 */}
                 <Button
@@ -1681,7 +1992,7 @@ export default function MeditationPage() {
               
               {/* 引导语选项 */}
               {guidances.map((guidance) => (
-                            <Button
+                  <Button
                         key={guidance.id}
                   variant="outline"
                   className={`flex items-center justify-between p-4 h-auto ${
@@ -1706,20 +2017,20 @@ export default function MeditationPage() {
                     <span className="text-xs opacity-70 mt-1">{t(guidance.description, guidance.description)}</span>
                   </div>
                   {selectedGuidance?.id === guidance.id && <Check size={18} />}
-                            </Button>
+                  </Button>
                 ))}
-                      </div>
+              </div>
           </DialogContent>
           </Dialog>
 
         {/* 时长选择 - 冥想时禁用 */}
           <Dialog>
             <DialogTrigger asChild>
-                <Button
+              <Button
               variant="outline" 
                   size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto sm:py-2 ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
@@ -1727,15 +2038,15 @@ export default function MeditationPage() {
             >
               <span className="sm:mr-1">{selectedDuration}</span>
               <span className="hidden sm:inline">{t("min", "分钟")}</span>
-                </Button>
+              </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-md`}>
-            <DialogHeader>
+              <DialogHeader>
               <DialogTitle>{t("Choose Duration", "选择冥想时长")}</DialogTitle>
-            </DialogHeader>
+              </DialogHeader>
             <div className="grid grid-cols-3 gap-2 mt-4">
               {[5, 10, 15, 20, 30, 45, 60].map((duration) => (
-              <Button
+                            <Button
                   key={duration}
                   variant="outline"
                   size="sm"
@@ -1766,7 +2077,7 @@ export default function MeditationPage() {
                   }`}
                 >
                   {duration} {t("min", "分钟")}
-              </Button>
+                            </Button>
               ))}
                       </div>
             
@@ -1801,7 +2112,7 @@ export default function MeditationPage() {
             </div>
       </div>
           </DialogContent>
-      </Dialog>
+          </Dialog>
 
         {/* 音量控制 - 冥想时禁用音量调节 */}
           <Dialog>
@@ -1810,7 +2121,7 @@ export default function MeditationPage() {
               variant="outline" 
               size="sm"
               disabled={isPlaying || isPlayingEndSound}
-              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto ${
+              className={`rounded-full h-9 w-9 sm:h-auto sm:w-auto sm:py-2 ${
                 isPlaying || isPlayingEndSound 
                   ? 'opacity-50 cursor-not-allowed' 
                   : ''
@@ -1820,19 +2131,19 @@ export default function MeditationPage() {
               </Button>
             </DialogTrigger>
           <DialogContent className={`${isDarkThemeTop ? 'bg-indigo-950 border-indigo-800/30 text-indigo-100' : 'bg-white border-blue-200/50 text-slate-800'} max-w-xs`}>
-            <DialogHeader>
+                <DialogHeader>
               <DialogTitle>{t("Volume Control", "音量控制")}</DialogTitle>
-            </DialogHeader>
+                </DialogHeader>
             <div className="mt-4 space-y-4">
               <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={toggleMute}
                   className={isDarkThemeTop ? 'text-indigo-300 hover:bg-indigo-900/50' : 'text-blue-700 hover:bg-blue-100/80'}
-              >
+                >
                   {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-              </Button>
+                </Button>
                 <span className="text-lg font-medium">{volume}%</span>
         </div>
               <Slider
@@ -1902,8 +2213,8 @@ export default function MeditationPage() {
             className="absolute inset-0 opacity-10"
             style={{ 
               background: isDarkThemeTop 
-                ? `radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, transparent 70%)`
-                : `radial-gradient(circle at center, rgba(37, 99, 235, 0.3) 0%, transparent 70%)`,
+                ? `radial-gradient(circle at bottom, rgba(99, 102, 241, 0.2) 0%, transparent 70%)`
+                : `radial-gradient(circle at bottom, rgba(37, 99, 235, 0.3) 0%, transparent 70%)`,
             }}
             animate={{ 
               scale: [1.5, 1.7, 1.5],
@@ -1957,8 +2268,8 @@ export default function MeditationPage() {
               }}
               size="large"
               position="center"
-            />
-          </div>
+              />
+            </div>
 
           {/* 固定位置的内容 - 使用绝对定位确保不会抖动 */}
           <div className="absolute inset-0 z-30">
@@ -1972,7 +2283,7 @@ export default function MeditationPage() {
               
               {/* 播放/暂停按钮 - 放在文本下方固定距离，移动端缩小并调整位置 */}
               <div className="absolute top-[58%] sm:top-[62%] md:top-[65%] left-1/2 -translate-x-1/2 text-center">
-                <Button
+              <Button
                   disabled={(isPlayingEndSound && guideState !== 'end') && timeLeft !== 0}
                   onClick={(e) => {
                     e.preventDefault(); // 防止事件冒泡
@@ -2028,9 +2339,9 @@ export default function MeditationPage() {
                 >
                   {isPlaying ? <Pause size={20} className="sm:size-24" /> : 
                    timeLeft === 0 ? <RotateCcw size={20} className="sm:size-24" /> : <Play size={20} className="sm:size-24" />}
-                </Button>
-              </div>
+              </Button>
             </div>
+    </div>
           </div>
         </div>
         

@@ -7,11 +7,13 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAppTheme } from "@/contexts/theme-context";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function AboutPage() {
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const { isDarkTheme, themeStyles } = useAppTheme();
+  const isMobile = useIsMobile();
 
   // 监听滚动事件
   useEffect(() => {
@@ -234,7 +236,14 @@ export default function AboutPage() {
               </p>
               <div className="flex justify-center gap-4">
                 <Link href="/meditation">
-                  <Button className={`${themeStyles.buttonBackground} ${themeStyles.buttonHover} ${themeStyles.buttonText} px-8 py-2 rounded-full`}>
+                  <Button
+                    variant="outline"
+                    className={`px-8 py-2 rounded-full ${
+                      isDarkTheme 
+                        ? " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                        : " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                    } backdrop-blur-sm transition-all duration-200`}
+                  >
                     {t("开始冥想", "Start Meditating")}
                   </Button>
                 </Link>

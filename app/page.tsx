@@ -77,7 +77,7 @@ export default function IndexPage() {
             }}
             transition={{ 
               duration: 15, 
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
             }}
           />
@@ -179,12 +179,12 @@ export default function IndexPage() {
         
         {/* 向下滚动提示 */}
         <motion.div 
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center ${isDarkTheme ? 'text-indigo-300/60' : 'text-blue-700/60'} cursor-pointer`}
+          className={`absolute bottom-8 left-0 right-0 mx-auto w-max flex flex-col items-center ${isDarkTheme ? 'text-indigo-300/60' : 'text-blue-700/60'} cursor-pointer`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, y: [0, 10, 0] }}
           transition={{ 
             opacity: { delay: 2, duration: 1 },
-            y: { delay: 2, duration: 2, repeat: Infinity, repeatType: "loop" }
+            y: { delay: 2, duration: 2, repeat: Number.POSITIVE_INFINITY, repeatType: "loop" }
           }}
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
         >
@@ -265,10 +265,10 @@ export default function IndexPage() {
                   {t("参与方式", "How to Join")}
                 </h3>
                 <p className={`${isDarkTheme ? 'text-indigo-200/70' : 'text-slate-600'} text-sm leading-relaxed mb-3`}>
-                  {t("日常打卡: 工作日 7:30-8:00", "Daily Check-in: Weekdays 7:30-8:00")}
+                  {t("日常打卡: 工作日 7:30-8:00 & 11:00-11:30", "Daily Check-in: Weekdays 7:30-8:00 & 11:00-11:30")}
                 </p>
                 <p className={`${isDarkTheme ? 'text-indigo-200/70' : 'text-slate-600'} text-sm leading-relaxed`}>
-                  {t("周末冥想: 每周六 10:00-13:00", "Weekend Meditation: Saturday 10:00-13:00")}
+                  {t("周末冥想: 每周六 10:00-12:00", "Weekend Meditation: Saturday 10:00-12:00")}
                 </p>
               </div>
             </motion.div>
@@ -314,7 +314,7 @@ export default function IndexPage() {
             }}
             transition={{
               duration: 20,
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               repeatType: 'reverse',
               ease: "linear",
             }}
@@ -450,7 +450,7 @@ export default function IndexPage() {
             }}
             transition={{ 
               duration: 60, 
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               repeatType: 'reverse',
               ease: "linear",
             }}

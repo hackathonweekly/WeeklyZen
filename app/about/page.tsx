@@ -43,27 +43,37 @@ export default function AboutPage() {
           
           {/* 添加星空效果 */}
           <div className="absolute inset-0 opacity-60">
-            {Array.from({ length: 50 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: Math.random() * 2 + 1 + 'px',
-                  height: Math.random() * 2 + 1 + 'px',
-                  top: Math.random() * 100 + '%',
-                  left: Math.random() * 100 + '%',
-                }}
-                animate={{
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: Math.random() * 5 + 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: Math.random() * 5,
-                }}
-              />
-            ))}
+            {Array.from({ length: 50 }).map(() => {
+              // 为每个星星生成唯一ID
+              const uniqueId = Math.random().toString(36).substring(2, 9);
+              const size = Math.random() * 2 + 1;
+              const top = Math.random() * 100;
+              const left = Math.random() * 100;
+              const duration = Math.random() * 5 + 5;
+              const delay = Math.random() * 5;
+              
+              return (
+                <motion.div
+                  key={uniqueId}
+                  className="absolute rounded-full bg-white"
+                  style={{
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    top: `${top}%`,
+                    left: `${left}%`,
+                  }}
+                  animate={{
+                    opacity: [0.3, 0.8, 0.3],
+                  }}
+                  transition={{
+                    duration,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                    delay,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -77,7 +87,7 @@ export default function AboutPage() {
             <h1 className={`text-3xl sm:text-4xl md:text-5xl font-light ${themeStyles.primaryText} mb-6 leading-tight`}>
               {t("关于我们", "About Us")}
             </h1>
-            <p className={themeStyles.secondaryText + " max-w-2xl mx-auto"}>
+            <p className={`${themeStyles.secondaryText} max-w-2xl mx-auto`}>
               {t(
                 "了解周周冥想小组的理念、历史和参与方式",
                 "Learn about the philosophy, history, and how to participate in WeeklyZen"
@@ -104,8 +114,8 @@ export default function AboutPage() {
               <div className="space-y-4">
                 <p className={`${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'} leading-relaxed`}>
                   {t(
-                    "周周冥想起源于2021年，一群热爱冥想的创客和开发者在讨论如何将冥想融入忙碌的工作生活中。我们注意到许多开发者面临压力、注意力分散等挑战，而冥想正是解决这些问题的有效方法。",
-                    "WeeklyZen began in 2021 when a group of meditation enthusiasts who were also makers and developers discussed how to integrate meditation into busy work lives. We noticed that many developers face challenges such as stress and attention fragmentation, and meditation is an effective way to address these issues."
+                    "周周冥想起源于2025年，一群热爱冥想的创客和开发者在讨论如何将冥想融入忙碌的工作生活中。我们注意到许多开发者面临压力、注意力分散等挑战，而冥想正是解决这些问题的有效方法。",
+                    "WeeklyZen began in 2025 when a group of meditation enthusiasts who were also makers and developers discussed how to integrate meditation into busy work lives. We noticed that many developers face challenges such as stress and attention fragmentation, and meditation is an effective way to address these issues."
                   )}
                 </p>
                 <p className={`${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'} leading-relaxed`}>
@@ -193,21 +203,21 @@ export default function AboutPage() {
                         <span className={`${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'} mr-2`}>•</span>
                         <div>
                           <strong>{t("线上分享会", "Online Sharing Session")}</strong>
-                          <p>{t("每周四 21:00-22:00，分享冥想经验和学习", "Thursday 21:00-22:00, sharing meditation experiences and learning")}</p>
+                          <p>{t("每周六 10:00-12:00，分享冥想经验和学习", "Saturday 10:00-12:00, sharing meditation experiences and learning")}</p>
                         </div>
                       </li>
                     </ul>
                   </div>
                   <div className={`flex-1 ${isDarkTheme ? 'bg-indigo-900/20' : 'bg-blue-50/80'} p-6 rounded-xl border ${isDarkTheme ? 'border-indigo-600/10' : 'border-blue-200/50'}`}>
                     <h3 className={`text-xl font-medium ${themeStyles.primaryText} mb-3`}>
-                      {t("线下活动", "Offline Activities")}
+                      {t("线下活动(不定期举办)", "Offline Activities (occasionally held)")}
                     </h3>
                     <ul className={`space-y-3 ${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'}`}>
                       <li className="flex items-start">
                         <span className={`${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'} mr-2`}>•</span>
                         <div>
                           <strong>{t("周末冥想坐", "Weekend Meditation")}</strong>
-                          <p>{t("每周六 10:00-13:00，在北京、上海等城市有线下场地", "Saturday 10:00-13:00, with offline venues in cities like Beijing and Shanghai")}</p>
+                          <p>{t("每周六 10:00-12:00，在北上广深等城市有线下场地", "Saturday 10:00-12:00, with offline venues in cities like Beijing, Shanghai, Guangzhou, and Shenzhen")}</p>
                         </div>
                       </li>
                       <li className="flex items-start">
@@ -230,10 +240,47 @@ export default function AboutPage() {
               </h2>
               <p className={`${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'} leading-relaxed mb-6 max-w-2xl mx-auto`}>
                 {t(
-                  "无论您是冥想新手还是有经验的练习者，我们都欢迎您加入周周冥想小组，一起探索内心的宁静。扫描下方二维码或发送邮件至 contact@weeklyzen.com",
-                  "Whether you're new to meditation or an experienced practitioner, we welcome you to join the WeeklyZen group and explore inner peace together. Scan the QR code below or send an email to contact@weeklyzen.com"
+                  "无论您是冥想新手还是有经验的练习者，我们都欢迎您加入周周冥想小组，一起探索内心的宁静。关注我们的微信公众号或发送邮件至 contact@weeklyzen.com",
+                  "Whether you're new to meditation or an experienced practitioner, we welcome you to join the WeeklyZen group and explore inner peace together. Follow our WeChat official account or send an email to contact@weeklyzen.com"
                 )}
               </p>
+              
+              {/* 微信公众号二维码 */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-8">
+                <div className={`${isDarkTheme ? 'bg-white/10' : 'bg-white'} p-4 rounded-xl shadow-md ${isDarkTheme ? 'shadow-indigo-500/10' : 'shadow-blue-300/20'}`}>
+                  <div className="relative w-[150px] h-[150px]">
+                    <img 
+                      src="/wechat_qrcode.jpg" 
+                      alt={t("周周冥想微信公众号", "WeeklyZen WeChat Official Account")} 
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                  </div>
+                  <p className={`mt-3 text-sm ${isDarkTheme ? 'text-indigo-200' : 'text-slate-600'}`}>
+                    {t("扫码关注微信公众号", "Scan to follow our WeChat account")}
+                  </p>
+                </div>
+                
+                <div className={`max-w-sm ${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'} text-left`}>
+                  <h3 className={`text-xl font-medium ${themeStyles.primaryText} mb-2`}>
+                    {t("关注公众号获取", "Follow our WeChat account for")}
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className={`${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'} mr-2`}>•</span>
+                      {t("每日冥想指导和提醒", "Daily meditation guidance and reminders")}
+                    </li>
+                    <li className="flex items-center">
+                      <span className={`${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'} mr-2`}>•</span>
+                      {t("线上活动通知", "Online event notifications")}
+                    </li>
+                    <li className="flex items-center">
+                      <span className={`${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'} mr-2`}>•</span>
+                      {t("冥想资源和文章分享", "Meditation resources and article sharing")}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
               <div className="flex justify-center gap-4">
                 <Link href="/meditation">
                   <Button

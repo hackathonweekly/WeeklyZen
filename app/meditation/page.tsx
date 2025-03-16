@@ -325,7 +325,7 @@ export default function MeditationPage() {
   // 默认使用光环扩散效果
   const [animationType, setAnimationType] = useState(3)
   // 设置默认音效（海浪）
-  const defaultSound = sounds.find(s => s.id === 'waves') || null
+  const defaultSound = sounds.find(s => s.id === 'creek') || null
   const [selectedSound, setSelectedSound] = useState<SoundData | null>(defaultSound)
   const [volume, setVolume] = useState(25)
   const [isMuted, setIsMuted] = useState(false)

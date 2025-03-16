@@ -2,6 +2,8 @@
 
 WeeklyZen（周周冥想）是一个专注于冥想练习的网站，为创客和开发者提供一个简单、可持续的冥想空间。本项目基于 Next.js 15 (App Router)、Shadcn UI、Tailwind CSS 和 Framer Motion 构建。
 
+![website](image.png)
+
 ## 主要功能
 
 ### 1. 多语言支持

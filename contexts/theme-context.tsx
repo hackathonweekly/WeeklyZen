@@ -44,7 +44,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   
   // 判断是否为暗色主题
   // 使用resolvedTheme避免初始渲染时的"undefined"问题
-  const isDarkTheme = mounted ? (resolvedTheme === 'dark') : true // 默认假设是暗色主题
+  const isDarkTheme = mounted ? (resolvedTheme === 'dark') : false // 默认假设是亮色主题
 
   // 定义全局主题样式
   const themeStyles = {

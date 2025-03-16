@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Music, BookOpen, Volume2, VolumeX, Play, Pause, Sliders, Clock, ChevronDown, Headphones } from 'lucide-react';
+import { ArrowLeft, Music, BookOpen, Volume2, VolumeX, Play, Pause, Sliders, Clock, ChevronDown, Headphones, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider as UISlider } from '@/components/ui/slider';
@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from 'sonner';
 import { sounds } from '@/app/sounds';
 import type { SoundData } from '@/app/sounds';
@@ -86,6 +87,30 @@ export default function MeditationPage() {
   // 音频元素引用
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const endSoundRef = useRef<HTMLAudioElement | null>(null);
+  
+  // 新增移动端菜单状态
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // 检测是否是移动设备
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // 监听窗口大小变化
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // 初始检测
+    checkIsMobile();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', checkIsMobile);
+    
+    // 清理函数
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   // 更新倒计时
   useEffect(() => {
@@ -476,7 +501,7 @@ export default function MeditationPage() {
   
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
-      {/* 顶部导航 */}
+      {/* 顶部导航 - 响应式设计 */}
       <div className="p-4 flex justify-between items-center">
         <Button 
           variant="ghost" 
@@ -487,15 +512,16 @@ export default function MeditationPage() {
           <ArrowLeft size={20} />
         </Button>
         
-        <div className="flex space-x-2">
+        {/* 桌面版菜单 */}
+        <div className="hidden md:flex space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => setShowSoundDialog(true)}
             className={`rounded-full ${buttonStyle}`}
           >
-            <Music size={16} className="mr-1" />
-            {t("背景音效", "Sound")}
+            <Music size={16} className="md:mr-1" />
+            <span className="hidden md:inline">{t("背景音效", "Sound")}</span>
           </Button>
           
           <Button 
@@ -504,8 +530,8 @@ export default function MeditationPage() {
             onClick={() => setShowGuidanceDialog(true)}
             className={`rounded-full ${buttonStyle}`}
           >
-            <BookOpen size={16} className="mr-1" />
-            {t("引导语", "Guidance")}
+            <BookOpen size={16} className="md:mr-1" />
+            <span className="hidden md:inline">{t("引导语", "Guidance")}</span>
           </Button>
 
           <Button 
@@ -514,8 +540,8 @@ export default function MeditationPage() {
             onClick={() => setShowCourseDialog(true)}
             className={`rounded-full ${buttonStyle}`}
           >
-            <Headphones size={16} className="mr-1" />
-            {t("冥想课程", "Courses")}
+            <Headphones size={16} className="md:mr-1" />
+            <span className="hidden md:inline">{t("冥想课程", "Courses")}</span>
           </Button>
           
           {/* 时长选择下拉菜单 */}
@@ -526,11 +552,13 @@ export default function MeditationPage() {
                 size="sm" 
                 className={`rounded-full ${buttonStyle}`}
               >
-                <Clock size={16} className="mr-1" />
-                {selectedDuration < 1 
-                  ? `${Math.round(selectedDuration * 60)}${t("秒", "sec")}`
-                  : `${selectedDuration}${t("分钟", "min")}`}
-                <ChevronDown size={14} className="ml-1" />
+                <Clock size={16} className="md:mr-1" />
+                <span className="hidden md:inline">
+                  {selectedDuration < 1 
+                    ? `${Math.round(selectedDuration * 60)}${t("秒", "sec")}`
+                    : `${selectedDuration}${t("分钟", "min")}`}
+                </span>
+                <ChevronDown size={14} className="hidden md:inline ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className={isDarkTheme ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}>
@@ -561,6 +589,103 @@ export default function MeditationPage() {
           </Button>
         </div>
         
+        {/* 移动端菜单按钮 */}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild className="md:hidden">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Menu size={20} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="top" className={`p-0 ${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}`}>
+            <div className="flex flex-col p-4 space-y-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setShowSoundDialog(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full justify-start ${buttonStyle}`}
+              >
+                <Music size={18} className="mr-2" />
+                {t("背景音效", "Sound")}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setShowGuidanceDialog(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full justify-start ${buttonStyle}`}
+              >
+                <BookOpen size={18} className="mr-2" />
+                {t("引导语", "Guidance")}
+              </Button>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setShowCourseDialog(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full justify-start ${buttonStyle}`}
+              >
+                <Headphones size={18} className="mr-2" />
+                {t("冥想课程", "Courses")}
+              </Button>
+              
+              {/* 移动端时长选择 */}
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Clock size={18} className="mr-2" />
+                  <span>{t("冥想时长", "Duration")}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {durationOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant="outline"
+                      size="sm"
+                      className={`${
+                        selectedDuration === option.value
+                          ? isDarkTheme
+                            ? 'bg-blue-900/50 border-blue-700'
+                            : 'bg-blue-100 border-blue-300'
+                          : ''
+                      } ${option.isTest ? 'text-orange-500' : ''}`}
+                      onClick={() => {
+                        handleDurationSelect(option.value);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* 移动端主题切换 */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  toggleTheme();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full justify-start ${buttonStyle}`}
+              >
+                {isDarkTheme 
+                  ? <span className="flex items-center"><span className="mr-2">☀️</span>{t("亮色模式", "Light Mode")}</span>
+                  : <span className="flex items-center"><span className="mr-2">🌙</span>{t("暗色模式", "Dark Mode")}</span>
+                }
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+        
         <div className="relative">
           <Button 
             id="volume-button"
@@ -572,11 +697,11 @@ export default function MeditationPage() {
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </Button>
           
-          {/* 音量滑块 - 优化设计 */}
+          {/* 音量滑块 - 响应式优化 */}
           {showVolumeSlider && (
             <div 
               id="volume-slider-container"
-              className={`absolute right-0 top-full mt-2 p-4 rounded-lg shadow-lg z-50 w-48 
+              className={`absolute right-0 md:right-auto md:left-1/2 md:transform md:-translate-x-1/2 top-full mt-2 p-4 rounded-lg shadow-lg z-50 w-48 
                 ${isDarkTheme 
                   ? 'bg-slate-900/90 border border-slate-800' 
                   : 'bg-white/90 border border-slate-200'} 
@@ -614,24 +739,24 @@ export default function MeditationPage() {
         </div>
       </div>
 
-      {/* 选中课程显示 */}
+      {/* 选中课程显示 - 响应式优化 */}
       {selectedCourse && (
         <div className={`text-center px-4 py-2 ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'}`}>
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center flex-wrap">
             <Headphones size={16} className="mr-2" />
             <span className="font-semibold">{selectedCourse.name}</span>
           </div>
-          <div className="text-xs mt-1 opacity-80">
+          <div className="text-xs mt-1 opacity-80 px-2">
             {t("来源：潮汐APP", "Source: Tide APP")} | {selectedCourse.duration} {t("分钟", "min")}
           </div>
         </div>
       )}
       
-      {/* 主要内容 - 居中显示 */}
+      {/* 主要内容 - 响应式布局优化 */}
       <div className="flex-1 flex flex-col items-center justify-center relative">
-        {/* 呼吸球背景 - 放在最底层 */}
+        {/* 呼吸球背景 - 响应式大小 */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          <div className="w-[80vmin] h-[80vmin] max-w-[500px] max-h-[500px] relative">
+          <div className="w-[80vmin] h-[80vmin] md:max-w-[500px] md:max-h-[500px] relative">
             <BreathingSphere 
               isPlaying={isPlaying}
               showText={false}
@@ -640,19 +765,19 @@ export default function MeditationPage() {
           </div>
         </div>
         
-        {/* 计时器显示 - 放在球的正中间 */}
+        {/* 计时器显示 - 自适应字体大小 */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-          <div className="text-7xl font-light tracking-widest text-center">
+          <div className="text-4xl md:text-6xl lg:text-7xl font-light tracking-widest text-center">
             {formatTime(timeLeft)}
           </div>
         </div>
         
-        {/* 播放/暂停按钮 - 放在最上层 */}
-        <div className="relative z-20 mt-[60vh]">
+        {/* 播放/暂停按钮 - 自适应定位 */}
+        <div className="relative z-20 mt-[40vh] md:mt-[60vh]">
           <Button
             variant="outline"
             size="icon"
-            className={`w-16 h-16 rounded-full ${
+            className={`w-14 h-14 md:w-16 md:h-16 rounded-full ${
               isDarkTheme 
                 ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-600/30' 
                 : 'bg-white/80 hover:bg-white text-blue-600 border border-blue-200'
@@ -664,52 +789,58 @@ export default function MeditationPage() {
         </div>
       </div>
       
-      {/* 音效选择对话框 */}
+      {/* 对话框组件 - 优化移动端显示 */}
       <Dialog open={showSoundDialog} onOpenChange={setShowSoundDialog}>
-        <DialogContent className={isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}>
+        <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
           <DialogHeader>
             <DialogTitle>{t("选择背景音效", "Choose Background Sound")}</DialogTitle>
           </DialogHeader>
-          <SoundSelector
-            sounds={sounds}
-            selectedSound={selectedSound}
-            onSoundSelect={handleSoundSelect}
-            isDarkTheme={isDarkTheme}
-            t={t}
-          />
+          <div className="max-h-[70vh] overflow-y-auto">
+            <SoundSelector
+              sounds={sounds}
+              selectedSound={selectedSound}
+              onSoundSelect={handleSoundSelect}
+              isDarkTheme={isDarkTheme}
+              t={t}
+            />
+          </div>
         </DialogContent>
       </Dialog>
       
-      {/* 引导语选择对话框 */}
+      {/* 引导语选择对话框 - 优化移动端显示 */}
       <Dialog open={showGuidanceDialog} onOpenChange={setShowGuidanceDialog}>
-        <DialogContent className={isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}>
+        <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
           <DialogHeader>
             <DialogTitle>{t("选择引导语", "Choose Guidance")}</DialogTitle>
           </DialogHeader>
-          <GuidanceSelector
-            guidances={guidanceTexts}
-            selectedGuidance={selectedGuidance}
-            onGuidanceSelect={handleGuidanceSelect}
-            onShowFullText={() => {}}
-            isDarkTheme={isDarkTheme}
-            t={t}
-          />
+          <div className="max-h-[70vh] overflow-y-auto">
+            <GuidanceSelector
+              guidances={guidanceTexts}
+              selectedGuidance={selectedGuidance}
+              onGuidanceSelect={handleGuidanceSelect}
+              onShowFullText={() => {}}
+              isDarkTheme={isDarkTheme}
+              t={t}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* 冥想课程选择对话框 */}
+      {/* 冥想课程选择对话框 - 优化移动端显示 */}
       <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
-        <DialogContent className={isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}>
+        <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
           <DialogHeader>
             <DialogTitle>{t("选择冥想课程", "Choose Meditation Course")}</DialogTitle>
           </DialogHeader>
-          <CourseSelector
-            courses={courses}
-            selectedCourse={selectedCourse}
-            onCourseSelect={handleCourseSelect}
-            isDarkTheme={isDarkTheme}
-            t={t}
-          />
+          <div className="max-h-[70vh] overflow-y-auto">
+            <CourseSelector
+              courses={courses}
+              selectedCourse={selectedCourse}
+              onCourseSelect={handleCourseSelect}
+              isDarkTheme={isDarkTheme}
+              t={t}
+            />
+          </div>
         </DialogContent>
       </Dialog>
       

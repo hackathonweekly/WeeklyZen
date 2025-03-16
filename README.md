@@ -150,7 +150,7 @@ WeeklyZen/
 
 ---
 
-2024 © WeeklyZen | 周周冥想小组
+2025 © WeeklyZen | 周周冥想小组
 
 ## 我们是谁
 
@@ -189,3 +189,8 @@ npm run build
 
 - https://github.com/daijinhai/StayFocused ：我们使用了来自这个仓库整理的音频，它的音频来源于[Freesound](https://freesound.org/)，遵循 Creative Commons 许可协议
 - https://github.com/jackiexiao/next-shadcn-template：我们基于这个代码模板进行了修改
+
+
+## 微信公众号
+
+![微信公众号二维码](./public/wechat_qrcode.jpg)

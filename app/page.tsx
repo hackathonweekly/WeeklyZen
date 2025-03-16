@@ -511,6 +511,19 @@ export default function IndexPage() {
               <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>{t("周周冥想小组", "Weekly Meditation Group")}</div>
             </div>
             
+            <div className="flex flex-col items-center mb-6 md:mb-0">
+              <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} mb-2 text-center`}>
+                {t("关注微信公众号", "Follow WeChat Official Account")}
+              </div>
+              <div className={`w-24 h-24 md:w-28 md:h-28 rounded-md overflow-hidden border ${isDarkTheme ? 'border-indigo-800/30' : 'border-blue-200/50'} p-1 bg-white`}>
+                <img 
+                  src="/wechat_qrcode.jpg" 
+                  alt={t("微信公众号二维码", "WeChat QR Code")} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
             <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} text-center md:text-right`}>
               <p className="mb-2">© 2024 WeeklyZen</p>
               <p>{t("版权声明: CC BY-NC-SA 4.0", "License: CC BY-NC-SA 4.0")}</p>

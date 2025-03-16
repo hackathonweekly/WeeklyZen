@@ -44,7 +44,7 @@ export function GuidanceSelector({
             className={`text-xs ${isDarkTheme ? 'text-indigo-300 hover:text-indigo-200' : 'text-blue-600 hover:text-blue-700'}`}
           >
             <BookOpen size={16} className="mr-1" />
-            {t("查看全文", "View Full Text")}
+            {t("查看引导语", "View Guidance")}
           </Button>
         )}
       </div>

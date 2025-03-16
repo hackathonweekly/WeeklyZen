@@ -33,8 +33,8 @@ export function AudioController({
     
     if (selectedSound && isPlaying) {
       // 设置音频源
-      if (audioRef.current.src !== selectedSound.url) {
-        audioRef.current.src = selectedSound.url;
+      if (audioRef.current.src !== selectedSound.audioUrl) {
+        audioRef.current.src = selectedSound.audioUrl;
         audioRef.current.loop = true;
       }
       

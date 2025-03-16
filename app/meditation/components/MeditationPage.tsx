@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Music, BookOpen, Volume2, VolumeX, Play, Pause, Sliders, Clock, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Music, BookOpen, Volume2, VolumeX, Play, Pause, Sliders, Clock, ChevronDown, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider as UISlider } from '@/components/ui/slider';
@@ -16,6 +16,8 @@ import {
 import { toast } from 'sonner';
 import { sounds } from '@/app/sounds';
 import type { SoundData } from '@/app/sounds';
+import { courses, defaultCourse } from '@/app/courses';
+import type { CourseData } from '@/app/courses';
 import { useAppTheme } from '@/contexts/theme-context';
 import { useTheme } from 'next-themes';
 import { useGuidanceTexts } from '@/app/guidance';
@@ -24,6 +26,7 @@ import { AudioManager } from '../utils/AudioUtils';
 import { MeditationTimer } from './MeditationTimer';
 import { SoundSelector } from './SoundSelector';
 import { GuidanceSelector } from './GuidanceSelector';
+import { CourseSelector } from './CourseSelector';
 import { BreathingSphere } from '@/components/breathing-sphere';
 
 // 简单的翻译函数
@@ -65,6 +68,11 @@ export default function MeditationPage() {
   const [volume, setVolume] = useState(25);
   const [isMuted, setIsMuted] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  // 潮汐冥想课程相关
+  const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
+  const [courseAudio, setCourseAudio] = useState<HTMLAudioElement | null>(null);
+  const [showCourseDialog, setShowCourseDialog] = useState(false);
   
   // 引导语相关
   const { guidanceTexts } = useGuidanceTexts();
@@ -142,12 +150,17 @@ export default function MeditationPage() {
         guidanceAudio.pause();
         guidanceAudio.src = '';
       }
+
+      if (courseAudio) {
+        courseAudio.pause();
+        courseAudio.src = '';
+      }
       
       // 停止Web Audio API音频
       audioManager.current.stopAllSounds();
       audioManager.current.closeAudioContext();
     };
-  }, [guidanceAudio]);
+  }, [guidanceAudio, courseAudio]);
   
   // 处理音效选择
   const handleSoundSelect = (sound: SoundData | null) => {
@@ -194,6 +207,58 @@ export default function MeditationPage() {
     }
   };
   
+  // 处理课程选择
+  const handleCourseSelect = (course: CourseData | null) => {
+    // 先重置状态
+    setSelectedCourse(course);
+    setShowCourseDialog(false);
+    
+    // 如果选择了课程，停止其他音频
+    if (course) {
+      // 停止引导语音频
+      if (guidanceAudio) {
+        guidanceAudio.pause();
+        guidanceAudio.src = '';
+      }
+      setSelectedGuidance(null);
+      
+      // 停止背景音效
+      if (selectedSound) {
+        setSelectedSound(null);
+      }
+      
+      // 如果有正在播放的课程音频，先停止
+      if (courseAudio) {
+        courseAudio.pause();
+        courseAudio.src = '';
+      }
+      
+      // 更新冥想时长为课程时长
+      setSelectedDuration(course.duration);
+      setTimeLeft(course.duration * 60);
+      
+      // 创建新的课程音频
+      const audio = new Audio(course.audioUrl);
+      audio.volume = isMuted ? 0 : volume / 100;
+      setCourseAudio(audio);
+      
+      // 如果正在冥想，自动播放课程
+      if (isPlaying) {
+        audio.play().catch(error => {
+          console.error('播放课程音频失败:', error);
+          toast.error('播放课程音频失败，请重试');
+        });
+      }
+    } else {
+      // 如果取消选择课程，清理课程音频
+      if (courseAudio) {
+        courseAudio.pause();
+        courseAudio.src = '';
+        setCourseAudio(null);
+      }
+    }
+  };
+  
   // 处理音量变化
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
@@ -211,6 +276,10 @@ export default function MeditationPage() {
     if (guidanceAudio) {
       guidanceAudio.volume = newVolume / 100;
     }
+
+    if (courseAudio) {
+      courseAudio.volume = newVolume / 100;
+    }
   };
   
   // 切换静音
@@ -226,6 +295,10 @@ export default function MeditationPage() {
     if (guidanceAudio) {
       guidanceAudio.volume = newMutedState ? 0 : volume / 100;
     }
+
+    if (courseAudio) {
+      courseAudio.volume = newMutedState ? 0 : volume / 100;
+    }
   };
   
   // 切换播放/暂停
@@ -235,38 +308,51 @@ export default function MeditationPage() {
     
     // 如果开始播放
     if (newPlayingState) {
-      // 播放背景音效
-      if (selectedSound && audioRef.current) {
-        // 设置音频源（如果尚未设置）
-        if (!audioRef.current.src || !audioRef.current.src.includes(selectedSound.id)) {
-          audioRef.current.src = selectedSound.audioUrl;
-          audioRef.current.loop = true;
+      // 根据选择的内容播放对应的音频
+      if (selectedCourse && courseAudio) {
+        // 播放课程音频
+        courseAudio.currentTime = 0; // 从头开始播放
+        courseAudio.play().catch(error => {
+          console.error('播放课程音频失败:', error);
+          toast.error('播放课程音频失败，请重试');
+        });
+      } else {
+        // 播放背景音效
+        if (selectedSound && audioRef.current) {
+          // 设置音频源（如果尚未设置）
+          if (!audioRef.current.src || !audioRef.current.src.includes(selectedSound.id)) {
+            audioRef.current.src = selectedSound.audioUrl;
+            audioRef.current.loop = true;
+          }
+          
+          // 设置音量
+          audioRef.current.volume = isMuted ? 0 : volume / 100;
+          
+          // 播放音频
+          audioRef.current.play().catch(error => {
+            console.error('播放音频失败:', error);
+            toast.error('播放音频失败，请重试');
+          });
         }
         
-        // 设置音量
-        audioRef.current.volume = isMuted ? 0 : volume / 100;
-        
-        // 播放音频
-        audioRef.current.play().catch(error => {
-          console.error('播放音频失败:', error);
-          toast.error('播放音频失败，请重试');
-        });
-      }
-      
-      // 播放引导语音频
-      if (guidanceAudio) {
-        guidanceAudio.currentTime = 0; // 从头开始播放
-        guidanceAudio.play().catch(console.error);
+        // 播放引导语音频
+        if (guidanceAudio) {
+          guidanceAudio.currentTime = 0; // 从头开始播放
+          guidanceAudio.play().catch(console.error);
+        }
       }
     } else {
-      // 暂停背景音效
+      // 暂停所有音频
       if (audioRef.current) {
         audioRef.current.pause();
       }
       
-      // 暂停引导语音频
       if (guidanceAudio) {
         guidanceAudio.pause();
+      }
+
+      if (courseAudio) {
+        courseAudio.pause();
       }
     }
   };
@@ -289,6 +375,12 @@ export default function MeditationPage() {
       guidanceAudio.pause();
       guidanceAudio.currentTime = 0;
     }
+
+    // 停止课程音频
+    if (courseAudio) {
+      courseAudio.pause();
+      courseAudio.currentTime = 0;
+    }
     
     // 停止Web Audio API音频
     audioManager.current.stopAllSounds();
@@ -310,6 +402,11 @@ export default function MeditationPage() {
     // 停止引导语音频
     if (guidanceAudio) {
       guidanceAudio.pause();
+    }
+
+    // 停止课程音频
+    if (courseAudio) {
+      courseAudio.pause();
     }
     
     // 播放结束音效
@@ -410,6 +507,16 @@ export default function MeditationPage() {
             <BookOpen size={16} className="mr-1" />
             {t("引导语", "Guidance")}
           </Button>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowCourseDialog(true)}
+            className={`rounded-full ${buttonStyle}`}
+          >
+            <Headphones size={16} className="mr-1" />
+            {t("冥想课程", "Courses")}
+          </Button>
           
           {/* 时长选择下拉菜单 */}
           <DropdownMenu open={showDurationMenu} onOpenChange={setShowDurationMenu}>
@@ -506,6 +613,19 @@ export default function MeditationPage() {
           )}
         </div>
       </div>
+
+      {/* 选中课程显示 */}
+      {selectedCourse && (
+        <div className={`text-center px-4 py-2 ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'}`}>
+          <div className="flex items-center justify-center">
+            <Headphones size={16} className="mr-2" />
+            <span className="font-semibold">{selectedCourse.name}</span>
+          </div>
+          <div className="text-xs mt-1 opacity-80">
+            {t("来源：潮汐APP", "Source: Tide APP")} | {selectedCourse.duration} {t("分钟", "min")}
+          </div>
+        </div>
+      )}
       
       {/* 主要内容 - 居中显示 */}
       <div className="flex-1 flex flex-col items-center justify-center relative">
@@ -571,6 +691,22 @@ export default function MeditationPage() {
             selectedGuidance={selectedGuidance}
             onGuidanceSelect={handleGuidanceSelect}
             onShowFullText={() => {}}
+            isDarkTheme={isDarkTheme}
+            t={t}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* 冥想课程选择对话框 */}
+      <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
+        <DialogContent className={isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}>
+          <DialogHeader>
+            <DialogTitle>{t("选择冥想课程", "Choose Meditation Course")}</DialogTitle>
+          </DialogHeader>
+          <CourseSelector
+            courses={courses}
+            selectedCourse={selectedCourse}
+            onCourseSelect={handleCourseSelect}
             isDarkTheme={isDarkTheme}
             t={t}
           />

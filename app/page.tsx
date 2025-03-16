@@ -11,13 +11,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useTheme } from "next-themes";
 import { useAppTheme } from '@/contexts/theme-context';
 import { DialogContent } from "@/components/ui/dialog";
+import { BreathingSphere } from '@/components/breathing-sphere';
 
 export default function IndexPage() {
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
-  const [breathingState, setBreathingState] = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('inhale');
-  const breathingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { theme } = useTheme();
   const { isDarkTheme, themeStyles } = useAppTheme();
   const [mounted, setMounted] = useState(false);
@@ -41,44 +40,6 @@ export default function IndexPage() {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [scrolled]);
-  
-  // 呼吸动画控制
-  useEffect(() => {
-    // 启动呼吸动画循环
-    const startBreathingCycle = () => {
-      let cyclePosition = 0;
-      let textChangeTimeout: NodeJS.Timeout | null = null;
-      
-      // 清除任何现有的间隔
-      if (breathingIntervalRef.current) {
-        clearInterval(breathingIntervalRef.current);
-      }
-      
-      breathingIntervalRef.current = setInterval(() => {
-        // 总周期为 12 秒 (4-2-4-2)
-        // 吸气 4 秒，保持 2 秒，呼气 4 秒，休息 2 秒
-        if (cyclePosition < 4) {
-          setBreathingState('inhale');
-        } else if (cyclePosition < 6) {
-          setBreathingState('hold');
-        } else if (cyclePosition < 10) {
-          setBreathingState('exhale');
-        } else {
-          setBreathingState('rest');
-        }
-        
-        cyclePosition = (cyclePosition + 1) % 12;
-      }, 1000);
-    };
-    
-    startBreathingCycle();
-    
-    return () => {
-      if (breathingIntervalRef.current) {
-        clearInterval(breathingIntervalRef.current);
-      }
-    };
-  }, []);
 
   // 如果组件尚未挂载，先返回一个基础结构，避免水合不匹配
   if (!mounted) {
@@ -101,44 +62,18 @@ export default function IndexPage() {
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         {/* 背景动画 */}
-        <div className="absolute inset-0 -z-10">
-          {/* 星空效果 */}
-          <div className="absolute inset-0 opacity-80">
-            {Array.from({ length: 70 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className={`absolute rounded-full ${isDarkTheme ? 'bg-white' : 'bg-blue-500'}`}
-                style={{
-                  width: Math.random() * 3 + 1 + 'px',
-                  height: Math.random() * 3 + 1 + 'px',
-                  top: Math.random() * 100 + '%',
-                  left: Math.random() * 100 + '%',
-                }}
-                animate={{
-                  opacity: [0.3, 0.9, 0.3],
-                }}
-                transition={{
-                  duration: Math.random() * 5 + 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: Math.random() * 5,
-                }}
-              />
-            ))}
-          </div>
-          
-          {/* 柔和的波浪动画 */}
+        <div className="absolute inset-0">
+          {/* 柔和的波浪动画 - 调整透明度和大小 */}
           <motion.div 
-            className="absolute inset-0 opacity-20 -z-5"
+            className="absolute inset-0 opacity-10"
             style={{ 
               background: isDarkTheme 
-                ? "radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, transparent 70%)"
-                : "radial-gradient(circle at center, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
-              transform: "scale(1.5)",
+                ? "radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, transparent 70%)"
+                : "radial-gradient(circle at center, rgba(37, 99, 235, 0.3) 0%, transparent 70%)",
             }}
             animate={{ 
               scale: [1.5, 1.7, 1.5],
-              opacity: [0.2, 0.3, 0.2],
+              opacity: [0.1, 0.15, 0.1],
             }}
             transition={{ 
               duration: 15, 
@@ -147,69 +82,19 @@ export default function IndexPage() {
             }}
           />
           
-          {/* 呼吸圆圈背景光晕 - 仅在夜间模式下显示 */}
-          {/* {isDarkTheme && (
-            <motion.div 
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 bg-indigo-300/30 z-10"
-              animate={{ 
-                width: "100vmin",
-                height: "100vmin",
-              }}
+          {/* 呼吸球容器 - 绝对定位在第一屏中心 */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vmin] h-[70vmin] pointer-events-none`}>
+            <BreathingSphere 
+              isPlaying={true}
+              showText={false}
+              size="large"
+              position="center"
             />
-          )} */}
-          
-          {/* 呼吸圆圈 - 根据呼吸状态变化 */}
-          <motion.div 
-            style={{
-              background: isDarkTheme 
-                ? 'radial-gradient(circle, rgba(224,231,255,0.9) 0%, rgba(165,180,252,0.8) 100%)' 
-                : 'radial-gradient(circle, rgba(59,130,246,0.6) 0%, rgba(96,165,250,0.5) 100%)',
-            }}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full z-20"
-            animate={{ 
-              width: 
-                breathingState === 'inhale' ? ["40vmin", "70vmin"] : 
-                breathingState === 'hold' ? ["70vmin"] : 
-                breathingState === 'exhale' ? ["70vmin", "40vmin"] : 
-                ["40vmin"],
-              height: 
-                breathingState === 'inhale' ? ["40vmin", "70vmin"] : 
-                breathingState === 'hold' ? ["70vmin"] : 
-                breathingState === 'exhale' ? ["70vmin", "40vmin"] : 
-                ["40vmin"],
-              opacity: 
-                breathingState === 'inhale' ? [0.9, 1] : 
-                breathingState === 'hold' ? [1] : 
-                breathingState === 'exhale' ? [1, 0.9] : 
-                [0.9],
-              boxShadow: isDarkTheme
-                ? (breathingState === 'inhale' ? ['0 0 100px rgba(165,180,252,0.7)', '0 0 150px rgba(224,231,255,0.9)'] :
-                  breathingState === 'hold' ? ['0 0 150px rgba(224,231,255,0.9)'] :
-                  breathingState === 'exhale' ? ['0 0 150px rgba(224,231,255,0.9)', '0 0 100px rgba(165,180,252,0.7)'] :
-                  ['0 0 100px rgba(165,180,252,0.7)'])
-                : (breathingState === 'inhale' ? ['0 0 50px rgba(59,130,246,0.5)', '0 0 100px rgba(59,130,246,0.7)'] :
-                  breathingState === 'hold' ? ['0 0 100px rgba(59,130,246,0.7)'] :
-                  breathingState === 'exhale' ? ['0 0 100px rgba(59,130,246,0.7)', '0 0 50px rgba(59,130,246,0.5)'] :
-                  ['0 0 50px rgba(59,130,246,0.5)']),
-            }}
-            transition={{ 
-              duration: 
-                breathingState === 'inhale' ? 4 : 
-                breathingState === 'hold' ? 2 : 
-                breathingState === 'exhale' ? 4 : 
-                2,
-              ease: "easeInOut",
-            }}
-          />
-          
-          {/* 光晕效果 */}
-          <div className={`absolute top-1/4 left-1/4 w-24 h-24 rounded-full ${isDarkTheme ? 'bg-blue-500/5' : 'bg-blue-300/20'} blur-3xl`} />
-          <div className={`absolute bottom-1/3 right-1/3 w-32 h-32 rounded-full ${isDarkTheme ? 'bg-indigo-500/5' : 'bg-indigo-300/20'} blur-3xl`} />
-          <div className={`absolute top-2/3 right-1/4 w-20 h-20 rounded-full ${isDarkTheme ? 'bg-purple-500/5' : 'bg-sky-300/20'} blur-3xl`} />
+          </div>
         </div>
         
         {/* 主标题区域 */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center px-4 max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -222,16 +107,14 @@ export default function IndexPage() {
             
             <AnimatePresence mode="wait">
               <motion.div
-                key={breathingState === 'inhale' || breathingState === 'hold' ? 'inhale' : 'exhale'}
+                key="breathing-text"
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
                 transition={{ duration: 0.5 }}
                 className={`text-sm md:text-base ${isDarkTheme ? 'text-indigo-500/80' : 'text-blue-900/80'} font-medium tracking-wide mb-3`}
               >
-                {breathingState === 'inhale' || breathingState === 'hold' 
-                  ? t("跟随呼吸球，吸气", "Follow the breathing sphere, inhale") 
-                  : t("跟随呼吸球，呼气", "Follow the breathing sphere, exhale")}
+                {/* {t("跟随呼吸球，调整呼吸", "Follow the breathing sphere, adjust your breath")} */}
               </motion.div>
             </AnimatePresence>
           </motion.div>
@@ -269,17 +152,24 @@ export default function IndexPage() {
             <Link href="/meditation">
               <Button
                 size={isMobile ? "default" : "lg"}
-                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${themeStyles.buttonBackground} ${themeStyles.buttonHover} ${themeStyles.buttonText} relative overflow-hidden group`}
+                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${
+                  isDarkTheme 
+                    ? "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                    : "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                } backdrop-blur-sm transition-all duration-200`}
               >
                 <span className="relative z-10">{t("开始冥想", "Start Meditation")}</span>
-                <span className="absolute inset-0 bg-indigo-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></span>
               </Button>
             </Link>
             <Link href="/introduction">
               <Button
                 size={isMobile ? "default" : "lg"}
                 variant="outline"
-                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${isDarkTheme ? 'border-indigo-600/30 text-indigo-300 hover:bg-indigo-950/50 hover:text-indigo-200 hover:border-indigo-600/50' : 'border-blue-400/50 text-blue-700 hover:bg-blue-50 hover:text-blue-800 hover:border-blue-400/80'} transition-all`}
+                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${
+                  isDarkTheme 
+                    ? "border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
+                    : "border-blue-200/50 bg-indigo-100/95 text-blue-600 hover:bg-indigo-200/95"
+                } transition-all duration-200`}
               >
                 {t("冥想入门", "Introduction")}
               </Button>
@@ -298,7 +188,7 @@ export default function IndexPage() {
           }}
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
         >
-          <span className="text-xs mb-2">{t("了解更多", "Learn More")}</span>
+          <span className="text-xs mb-2 text-center">{t("了解更多", "Learn more")}</span>
           <ChevronDown size={20} />
         </motion.div>
       </section>
@@ -599,10 +489,13 @@ export default function IndexPage() {
             <Link href="/introduction">
               <Button 
                 size="lg" 
-                className={`rounded-full px-8 py-6 ${themeStyles.buttonBackground} ${themeStyles.buttonHover} ${themeStyles.buttonText} relative overflow-hidden group`}
+                className={`rounded-full px-8 py-6 ${
+                  isDarkTheme
+                    ? "border border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
+                    : "border border-blue-200/50 bg-white/95 text-blue-600 hover:bg-blue-50/95"
+                } backdrop-blur-sm transition-all duration-200`}
               >
                 <span className="relative z-10">{t("了解如何加入", "Learn How to Join")}</span>
-                <span className={`absolute inset-0 bg-gradient-to-r from-${isDarkTheme ? 'indigo-500 to-indigo-400' : 'blue-500 to-blue-400'} opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform scale-x-0 group-hover:scale-x-100 origin-left`}></span>
               </Button>
             </Link>
           </motion.div>
@@ -613,12 +506,12 @@ export default function IndexPage() {
       <footer className={`py-12 border-t ${isDarkTheme ? 'border-blue-800/20' : 'border-blue-300/30'}`}>
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
+            <div className="mb-6 md:mb-0 text-center md:text-left">
               <div className={`text-lg font-medium ${themeStyles.primaryText}`}>WeeklyZen</div>
               <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>{t("周周冥想小组", "Weekly Meditation Group")}</div>
             </div>
             
-            <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>
+            <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} text-center md:text-right`}>
               <p className="mb-2">© 2024 WeeklyZen</p>
               <p>{t("版权声明: CC BY-NC-SA 4.0", "License: CC BY-NC-SA 4.0")}</p>
             </div>

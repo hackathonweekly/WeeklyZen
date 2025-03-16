@@ -171,42 +171,6 @@ export const sounds: SoundData[] = [
     audioUrl: '/sounds/train.mp3'
   },
 
-  // // 冥想: todo 这些音频不存在
-  // {
-  //   id: 'zen-bells',
-  //   name: '禅铃',
-  //   category: '冥想',
-  //   iconType: 'bells',
-  //   audioUrl: '/sounds/meditation/zen-bells.mp3'
-  // },
-  // {
-  //   id: 'om-chanting',
-  //   name: '唵咒',
-  //   category: '冥想',
-  //   iconType: 'om',
-  //   audioUrl: '/sounds/meditation/om-chanting.mp3'
-  // },
-  // {
-  //   id: 'tibetan-bowls',
-  //   name: '藏碗',
-  //   category: '冥想',
-  //   iconType: 'bowl',
-  //   audioUrl: '/sounds/meditation/tibetan-bowls.mp3'
-  // },
-  // {
-  //   id: 'nature-meditation',
-  //   name: '自然冥想',
-  //   category: '冥想',
-  //   iconType: 'nature',
-  //   audioUrl: '/sounds/meditation/nature-meditation.mp3'
-  // },
-  // {
-  //   id: 'zen-flute',
-  //   name: '禅笛',
-  //   category: '冥想',
-  //   iconType: 'flute',
-  //   audioUrl: '/sounds/meditation/zen-flute.mp3'
-  // },
   // 结束声
   {
     id: 'temple-bells',
@@ -214,5 +178,12 @@ export const sounds: SoundData[] = [
     category: '结束声',
     iconType: 'bells',
     audioUrl: '/sounds/temple-bells.mp3'
+  },
+  {
+    id: 'bell',
+    name: '铃声',
+    category: '结束声',
+    iconType: 'bells',
+    audioUrl: '/sounds/bell.mp3'
   }
 ]

@@ -21,9 +21,9 @@ export function MainNav({ items }: MainNavProps) {
   return (
     <div className="mr-4 flex items-center space-x-6">
       <Link href="/" className="flex items-center space-x-2">
-        <span className="font-semibold text-lg transition-colors hover:text-primary">
+        {/* <span className="font-semibold text-lg transition-colors hover:text-primary">
           WeeklyZen
-        </span>
+        </span> */}
       </Link>
       <nav className="flex items-center space-x-6">
         {items?.map((item) => (

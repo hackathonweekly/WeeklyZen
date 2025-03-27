@@ -328,15 +328,12 @@ export default function MeditationPage() {
 
       // 如果当前正在播放冥想，自动播放引导语
       if (isPlaying) {
-        console.log('[调试] 冥想正在播放，自动播放引导语音频');
         audio.play().then(() => {
           console.log('[调试] 引导语音频开始播放成功');
         }).catch(error => {
           console.error('[调试] 播放引导语音频失败:', error);
           toast.error('播放引导语音频失败，请重试');
         });
-      } else {
-        console.log('[调试] 冥想未播放，等待用户点击播放按钮');
       }
     } else {
       console.log('[调试] 引导语没有音频URL');

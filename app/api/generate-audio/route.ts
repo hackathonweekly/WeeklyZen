@@ -39,6 +39,9 @@ export async function POST(request: Request) {
 
         console.log('[豆包TTS API] 开始生成音频，文本长度:', finalText.length);
 
+        // 添加Bearer token到请求头
+        const header = { "Authorization": "Bearer;" + access_token }
+
         // 准备请求体
         const requestBody = {
             app: { appid, token: access_token, cluster },
@@ -74,10 +77,7 @@ export async function POST(request: Request) {
         // 调用豆包TTS API
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // 不再使用Authorization头，因为token已经在requestBody中
-            },
+            headers: header,
             body: JSON.stringify(requestBody)
         });
 
@@ -169,6 +169,11 @@ export async function POST(request: Request) {
                     console.error('[豆包TTS API] 音频数据结构无法识别:', typeof responseData.audio);
                 }
             }
+            // 新增情况5: data字段直接是字符串
+            else if (responseData.data && typeof responseData.data === 'string') {
+                audioData = responseData.data;
+                console.log('[豆包TTS API] 从data字段直接提取字符串作为音频数据成功');
+            }
             // 如果确实没找到音频数据
             else {
                 console.error('[豆包TTS API] 响应中未找到音频数据:', JSON.stringify(responseData).substring(0, 200));
@@ -210,6 +215,10 @@ export async function POST(request: Request) {
         }
 
         console.log('[豆包TTS API] 成功提取音频数据，长度:', audioData.length);
+
+        // 在返回前添加详细日志
+        console.log('[豆包TTS API] 返回audioUrl，长度:', `data:audio/mp3;base64,${audioData}`.length);
+        console.log('[豆包TTS API] audioUrl前100字符:', `data:audio/mp3;base64,${audioData}`.substring(0, 100));
 
         // 返回音频URL（data URI格式）
         return NextResponse.json({

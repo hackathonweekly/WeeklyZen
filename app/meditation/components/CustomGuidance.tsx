@@ -232,7 +232,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 disabled={isTestMode}
             />
 
-            <div className="flex items-center space-x-2 mb-4">
+            {/* <div className="flex items-center space-x-2 mb-4">
                 <Switch
                     id="test-mode"
                     checked={isTestMode}
@@ -242,7 +242,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                     <FlaskConical className="h-4 w-4 inline-block mr-1" />
                     {t("测试模式（使用预设文本，跳过DeepSeek API调用）", "Test mode (use preset text, skip DeepSeek API call)")}
                 </Label>
-            </div>
+            </div> */}
 
             <Button
                 onClick={generateGuidance}

@@ -55,8 +55,17 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 throw new Error("Failed to generate guidance text");
             }
 
-            // 2. 调用豆包 TTS API 生成音频
-            const audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'));
+            let audioUrl = undefined;
+            let audioError = false;
+
+            // 2. 尝试调用豆包 TTS API 生成音频
+            try {
+                audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'));
+            } catch (error) {
+                console.error("Error generating audio:", error);
+                audioError = true;
+                // 音频生成失败，但不影响引导语创建
+            }
 
             // 3. 创建引导语对象并回调
             const newGuidance = {
@@ -80,10 +89,19 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             setUserInput('');
             setTitle('');
 
-            toast({
-                title: t("引导语创建成功", "Guidance created successfully"),
-                description: t("你的自定义引导语已成功创建", "Your custom guidance has been created"),
-            });
+            if (audioError) {
+                toast({
+                    title: t("引导语创建成功", "Guidance created successfully"),
+                    description: t("引导语创建成功，但音频生成失败。可能是因为API授权过期，请联系管理员。",
+                        "Your guidance was created but without audio. This might be due to expired API authorization."),
+                    variant: "default",
+                });
+            } else {
+                toast({
+                    title: t("引导语创建成功", "Guidance created successfully"),
+                    description: t("你的自定义引导语已成功创建", "Your custom guidance has been created"),
+                });
+            }
         } catch (error) {
             console.error("Error generating guidance:", error);
             toast({
@@ -124,6 +142,10 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
         });
 
         if (!response.ok) {
+            // 特别处理 401 错误
+            if (response.status === 401) {
+                throw new Error("API authorization failed (401): The API key or access token may have expired");
+            }
             throw new Error(`API request failed with status ${response.status}`);
         }
 

@@ -299,36 +299,47 @@ export default function MeditationPage() {
   const handleGuidanceSelect = (guidance: GuidanceType) => {
     // 如果有正在播放的引导语音频，先停止
     if (guidanceAudio) {
-      console.log('停止之前的引导语音频');
+      console.log('[调试] 停止之前的引导语音频');
       guidanceAudio.pause();
       guidanceAudio.src = '';
       setGuidanceAudio(null);
     }
 
     // 设置选中的引导语
-    console.log('选中引导语:', guidance);
+    console.log('[调试] 选中引导语:', guidance.id, guidance.title);
     setSelectedGuidance(guidance);
     setShowGuidanceDialog(false);
 
+    // 重置冥想（包括时间计时器和音频状态）
+    console.log('[调试] 重置冥想计时和音频');
+    resetMeditation();
+
     // 如果引导语有音频URL，创建新的音频元素
     if (guidance.audioUrl) {
-      console.log('引导语有音频URL，创建音频元素:', guidance.audioUrl);
+      console.log('[调试] 引导语有音频URL，创建音频元素:', guidance.audioUrl);
       const audio = new Audio(guidance.audioUrl);
       audio.volume = isMuted ? 0 : volume / 100;
+      console.log('[调试] 设置引导语音频音量:', isMuted ? 0 : volume / 100);
+
+      audio.onloadeddata = () => console.log('[调试] 引导语音频加载完成');
+      audio.onerror = (e) => console.error('[调试] 引导语音频加载出错:', e);
+
       setGuidanceAudio(audio);
 
       // 如果当前正在播放冥想，自动播放引导语
       if (isPlaying) {
-        console.log('冥想正在播放，自动播放引导语音频');
-        audio.play().catch(error => {
-          console.error('播放引导语音频失败:', error);
+        console.log('[调试] 冥想正在播放，自动播放引导语音频');
+        audio.play().then(() => {
+          console.log('[调试] 引导语音频开始播放成功');
+        }).catch(error => {
+          console.error('[调试] 播放引导语音频失败:', error);
           toast.error('播放引导语音频失败，请重试');
         });
       } else {
-        console.log('冥想未播放，等待用户点击播放按钮');
+        console.log('[调试] 冥想未播放，等待用户点击播放按钮');
       }
     } else {
-      console.log('引导语没有音频URL');
+      console.log('[调试] 引导语没有音频URL');
     }
   };
 
@@ -448,27 +459,26 @@ export default function MeditationPage() {
   // 切换播放/暂停
   const togglePlayPause = () => {
     const newPlayingState = !isPlaying;
-    console.log(`切换播放状态: ${isPlaying} -> ${newPlayingState}`);
+    console.log(`[调试] 切换播放状态: ${isPlaying} -> ${newPlayingState}`);
     setIsPlaying(newPlayingState);
 
     // 如果开始播放
     if (newPlayingState) {
       // 根据选择的内容播放对应的音频
       if (selectedCourse && courseAudio) {
-        console.log('播放课程音频');
+        console.log('[调试] 播放课程音频');
         // 播放课程音频
-        courseAudio.currentTime = 0; // 从头开始播放
         courseAudio.play().catch(error => {
-          console.error('播放课程音频失败:', error);
+          console.error('[调试] 播放课程音频失败:', error);
           toast.error('播放课程音频失败，请重试');
         });
       } else {
         // 播放背景音效
         if (selectedSound && audioRef.current) {
-          console.log('播放背景音效:', selectedSound.name);
+          console.log('[调试] 播放背景音效:', selectedSound.name);
           // 设置音频源（如果尚未设置）
           if (!audioRef.current.src || !audioRef.current.src.includes(selectedSound.id)) {
-            console.log('设置背景音效源:', selectedSound.audioUrl);
+            console.log('[调试] 设置背景音效源:', selectedSound.audioUrl);
             audioRef.current.src = selectedSound.audioUrl;
             audioRef.current.loop = true;
           }
@@ -478,41 +488,43 @@ export default function MeditationPage() {
 
           // 播放音频
           audioRef.current.play().catch(error => {
-            console.error('播放音频失败:', error);
+            console.error('[调试] 播放音频失败:', error);
             toast.error('播放音频失败，请重试');
           });
         } else {
-          console.log('没有选择背景音效或音频元素不存在');
+          console.log('[调试] 没有选择背景音效或音频元素不存在');
         }
 
         // 播放引导语音频
         if (guidanceAudio) {
-          console.log('播放引导语音频...');
-          guidanceAudio.currentTime = 0; // 从头开始播放
+          console.log('[调试] 播放引导语音频...');
+          console.log('[调试] 引导语音频当前时间:', guidanceAudio.currentTime);
+          // 不重置播放位置，继续播放当前位置
           guidanceAudio.play().then(() => {
-            console.log('引导语音频播放成功!');
+            console.log('[调试] 引导语音频播放成功!');
           }).catch(error => {
-            console.error('播放引导语音频失败:', error);
+            console.error('[调试] 播放引导语音频失败:', error);
             toast.error('播放引导语音频失败，请重试');
           });
         } else {
-          console.log('没有引导语音频可播放');
+          console.log('[调试] 没有引导语音频可播放');
           if (selectedGuidance) {
-            console.log('选中的引导语:', selectedGuidance.id, selectedGuidance.title);
-            console.log('引导语音频URL:', selectedGuidance.audioUrl || '无');
+            console.log('[调试] 选中的引导语:', selectedGuidance.id, selectedGuidance.title);
+            console.log('[调试] 引导语音频URL:', selectedGuidance.audioUrl || '无');
           } else {
-            console.log('未选择引导语');
+            console.log('[调试] 未选择引导语');
           }
         }
       }
     } else {
       // 暂停所有音频
-      console.log('暂停所有音频');
+      console.log('[调试] 暂停所有音频');
       if (audioRef.current) {
         audioRef.current.pause();
       }
 
       if (guidanceAudio) {
+        console.log('[调试] 暂停引导语音频，当前时间:', guidanceAudio.currentTime);
         guidanceAudio.pause();
       }
 
@@ -524,8 +536,11 @@ export default function MeditationPage() {
 
   // 重置冥想
   const resetMeditation = () => {
+    console.log('[调试] 开始重置冥想...');
+
     // 重置时间到选择的时长
     setTimeLeft(selectedDuration * 60);
+    console.log('[调试] 重置计时器到', selectedDuration, '分钟');
 
     // 确保不在播放状态
     setIsPlaying(false);
@@ -542,13 +557,33 @@ export default function MeditationPage() {
       endSoundRef.current.pause();
     }
 
+    // 停止引导语音频，但不清除引导语的选择状态
     if (guidanceAudio) {
+      console.log('[调试] 停止引导语音频');
       guidanceAudio.pause();
+      // 创建新的音频实例以重置播放位置
+      if (selectedGuidance?.audioUrl) {
+        console.log('[调试] 创建新的引导语音频实例:', selectedGuidance.audioUrl);
+        const audio = new Audio(selectedGuidance.audioUrl);
+        audio.volume = isMuted ? 0 : volume / 100;
+        audio.onloadeddata = () => console.log('[调试] 新的引导语音频加载完成');
+        setGuidanceAudio(audio);
+      } else {
+        // 如果没有音频URL，则清除引导语音频
+        console.log('[调试] 清除引导语音频');
+        guidanceAudio.src = '';
+        setGuidanceAudio(null);
+      }
+    } else {
+      console.log('[调试] 没有引导语音频需要重置');
     }
 
     if (courseAudio) {
+      console.log('[调试] 停止课程音频');
       courseAudio.pause();
     }
+
+    console.log('[调试] 冥想重置完成');
   };
 
   // 处理计时器结束
@@ -609,9 +644,48 @@ export default function MeditationPage() {
 
   // 处理时长选择
   const handleDurationSelect = (duration: number) => {
+    console.log('[调试] 选择新的冥想时长:', duration, '分钟');
     setSelectedDuration(duration);
     setTimeLeft(duration * 60);
     setShowDurationMenu(false);
+
+    // 重置冥想状态，但保持当前选中的引导语
+    console.log('[调试] 重置冥想状态，保持当前引导语');
+
+    // 确保不在播放状态
+    setIsPlaying(false);
+    setIsPlayingEndSound(false);
+
+    // 停止所有可能的音效
+    audioManager.current.stopAllSounds();
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    if (endSoundRef.current) {
+      endSoundRef.current.pause();
+    }
+
+    // 如果有引导语音频，停止并从头开始
+    if (guidanceAudio && selectedGuidance) {
+      console.log('[调试] 停止引导语音频并重置到开始位置');
+      guidanceAudio.pause();
+
+      // 创建新的音频实例以重置播放位置
+      if (selectedGuidance.audioUrl) {
+        console.log('[调试] 创建新的引导语音频实例以重置播放位置:', selectedGuidance.audioUrl);
+        const audio = new Audio(selectedGuidance.audioUrl);
+        audio.volume = isMuted ? 0 : volume / 100;
+        audio.onloadeddata = () => console.log('[调试] 新的引导语音频加载完成');
+        setGuidanceAudio(audio);
+      }
+    }
+
+    if (courseAudio) {
+      console.log('[调试] 停止课程音频');
+      courseAudio.pause();
+    }
   };
 
   // 格式化时间显示
@@ -663,6 +737,26 @@ export default function MeditationPage() {
     // ... [其他初始化代码]
   }, [t]);
 
+  // 更新showGuidanceDialog的设置逻辑，确保在播放状态下无法打开
+  const handleShowGuidanceDialog = () => {
+    if (!isPlaying) {
+      setShowGuidanceDialog(true);
+    } else {
+      // 可选：添加提示，告知用户需要先暂停
+      toast.info(t('请先暂停冥想后再更换引导语', 'Please pause meditation before changing guidance'));
+    }
+  };
+
+  // 更新showDurationMenu的设置逻辑
+  const handleShowDurationMenu = (open: boolean) => {
+    if (!isPlaying) {
+      setShowDurationMenu(open);
+    } else if (open) {
+      // 可选：添加提示，告知用户需要先暂停
+      toast.info(t('请先暂停冥想后再更改时长', 'Please pause meditation before changing duration'));
+    }
+  };
+
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
       {/* 顶部导航 - 响应式设计 */}
@@ -683,6 +777,7 @@ export default function MeditationPage() {
             size="sm"
             onClick={() => setShowSoundDialog(true)}
             className={`rounded-full ${buttonStyle}`}
+            disabled={isPlaying}
           >
             <Music size={16} className="md:mr-1" />
             <span className="hidden md:inline">{t("背景音效", "Sound")}</span>
@@ -691,8 +786,9 @@ export default function MeditationPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowGuidanceDialog(true)}
-            className={`rounded-full ${buttonStyle}`}
+            onClick={() => !isPlaying && setShowGuidanceDialog(true)}
+            className={`rounded-full ${buttonStyle} ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isPlaying}
           >
             <BookOpen size={16} className="md:mr-1" />
             <span className="hidden md:inline">{t("引导语", "Guidance")}</span>
@@ -709,12 +805,16 @@ export default function MeditationPage() {
           </Button> */}
 
           {/* 时长选择下拉菜单 */}
-          <DropdownMenu open={showDurationMenu} onOpenChange={setShowDurationMenu}>
+          <DropdownMenu
+            open={showDurationMenu && !isPlaying}
+            onOpenChange={(open) => !isPlaying && setShowDurationMenu(open)}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className={`rounded-full ${buttonStyle}`}
+                className={`rounded-full ${buttonStyle} ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isPlaying}
               >
                 <Clock size={16} className="md:mr-1" />
                 <span className="hidden md:inline">
@@ -753,9 +853,14 @@ export default function MeditationPage() {
         </div>
 
         {/* 移动端菜单按钮 */}
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <Sheet open={isMobileMenuOpen && !isPlaying} onOpenChange={(open) => !isPlaying && setIsMobileMenuOpen(open)}>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isPlaying}
+            >
               <Menu size={20} />
             </Button>
           </SheetTrigger>
@@ -769,6 +874,7 @@ export default function MeditationPage() {
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full justify-start ${buttonStyle}`}
+                disabled={isPlaying}
               >
                 <Music size={18} className="mr-2" />
                 {t("背景音效", "Sound")}
@@ -778,10 +884,13 @@ export default function MeditationPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setShowGuidanceDialog(true);
-                  setIsMobileMenuOpen(false);
+                  if (!isPlaying) {
+                    setShowGuidanceDialog(true);
+                    setIsMobileMenuOpen(false);
+                  }
                 }}
                 className={`w-full justify-start ${buttonStyle}`}
+                disabled={isPlaying}
               >
                 <BookOpen size={18} className="mr-2" />
                 {t("引导语", "Guidance")}
@@ -791,10 +900,13 @@ export default function MeditationPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setShowCourseDialog(true);
-                  setIsMobileMenuOpen(false);
+                  if (!isPlaying) {
+                    setShowCourseDialog(true);
+                    setIsMobileMenuOpen(false);
+                  }
                 }}
                 className={`w-full justify-start ${buttonStyle}`}
+                disabled={isPlaying}
               >
                 <Headphones size={18} className="mr-2" />
                 {t("冥想课程", "Courses")}
@@ -985,7 +1097,14 @@ export default function MeditationPage() {
       </Dialog>
 
       {/* 引导语选择对话框 - 优化移动端显示 */}
-      <Dialog open={showGuidanceDialog} onOpenChange={setShowGuidanceDialog}>
+      <Dialog
+        open={showGuidanceDialog && !isPlaying}
+        onOpenChange={(open) => {
+          if (!isPlaying || !open) {
+            setShowGuidanceDialog(open);
+          }
+        }}
+      >
         <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
           <DialogHeader>
             <DialogTitle>{t("选择引导语", "Choose Guidance")}</DialogTitle>

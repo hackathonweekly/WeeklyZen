@@ -76,8 +76,7 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 确保标准的Bearer token格式（无分号）
-                'Authorization': `Bearer ${access_token}`
+                // 不再使用Authorization头，因为token已经在requestBody中
             },
             body: JSON.stringify(requestBody)
         });
@@ -94,8 +93,8 @@ export async function POST(request: Request) {
 
             // 输出响应结构，帮助调试
             console.log('[豆包TTS API] 响应结构:', Object.keys(responseData).join(', '));
-            if (responseData.audio) {
-                console.log('[豆包TTS API] 音频结构:', Object.keys(responseData.audio).join(', '));
+            if (responseData.data) {
+                console.log('[豆包TTS API] data字段结构:', Object.keys(responseData.data).join(', '));
             }
         } catch (e) {
             console.error('[豆包TTS API] 响应不是有效的JSON:', responseText.substring(0, 100));
@@ -119,8 +118,8 @@ export async function POST(request: Request) {
             );
         }
 
-        // 检查API响应中的code字段，某些API在HTTP 200的情况下仍可能通过code字段表示错误
-        if (responseData && responseData.code !== 0 && responseData.code !== '0') {
+        // 检查API响应中的code字段，特定处理code 3000为成功状态
+        if (responseData && responseData.code !== 0 && responseData.code !== '0' && responseData.code !== 3000 && responseData.code !== '3000') {
             console.error('[豆包TTS API] API返回错误代码:', responseData.code, responseData.message);
             return NextResponse.json(
                 {
@@ -132,12 +131,22 @@ export async function POST(request: Request) {
             );
         }
 
+        // 对于code 3000的情况，视为成功，继续处理
+        if (responseData && (responseData.code === 3000 || responseData.code === '3000')) {
+            console.log('[豆包TTS API] 收到成功状态码3000:', responseData.message);
+        }
+
         // 处理各种可能的响应结构情况
         let audioData = null;
 
         if (responseData) {
+            // 检查data字段中的音频数据 - 豆包API常见格式
+            if (responseData.data && responseData.data.audio_binary) {
+                audioData = responseData.data.audio_binary;
+                console.log('[豆包TTS API] 从data.audio_binary字段提取音频数据成功');
+            }
             // 情况1: 标准结构 responseData.audio.audio_data
-            if (responseData.audio && responseData.audio.audio_data) {
+            else if (responseData.audio && responseData.audio.audio_data) {
                 audioData = responseData.audio.audio_data;
                 console.log('[豆包TTS API] 从标准结构提取音频数据成功');
             }
@@ -149,7 +158,7 @@ export async function POST(request: Request) {
             // 情况3: 嵌套在data字段
             else if (responseData.data && responseData.data.audio_data) {
                 audioData = responseData.data.audio_data;
-                console.log('[豆包TTS API] 从data字段提取音频数据成功');
+                console.log('[豆包TTS API] 从data.audio_data字段提取音频数据成功');
             }
             // 情况4: 响应本身就是base64编码数据
             else if (responseData.audio) {

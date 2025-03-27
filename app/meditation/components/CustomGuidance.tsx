@@ -4,9 +4,11 @@ import { useState, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2 } from 'lucide-react';
+import { Loader2, Wand2, FlaskConical } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface CustomGuidanceProps {
     onGuidanceCreated: (guidance: {
@@ -25,9 +27,10 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     const [userInput, setUserInput] = useState('');
     const [title, setTitle] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isTestMode, setIsTestMode] = useState(false);
 
     const generateGuidance = async () => {
-        if (!userInput.trim()) {
+        if (!userInput.trim() && !isTestMode) {
             toast({
                 title: t("请输入内容", "Please enter content"),
                 description: t("请输入你想要生成引导语的内容", "Please enter the content to generate guidance from"),
@@ -48,24 +51,41 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
         setIsGenerating(true);
 
         try {
-            // 1. 调用 DeepSeek API 生成引导语文本
-            console.log("[引导语生成] 开始调用 DeepSeek API");
-            const deepseekResponse = await generateTextFromDeepSeek(userInput);
+            let deepseekResponse;
+
+            // 测试模式：使用预设的引导语内容，无需调用DeepSeek API
+            if (isTestMode) {
+                console.log("[引导语生成] 测试模式：使用预设引导语内容");
+                // 预设的引导语内容
+                const testParagraphs = [
+                    "欢迎来到这段平静的时光............",
+                    "让我们暂时放下所有的烦恼...给自己一个喘息的机会...在这里...你可以完全放松下来...不必担心任何事...",
+                    "深吸一口气...感受空气...缓缓流入你的身体...然后轻轻地呼出...让紧张随着呼吸...慢慢离开...",
+                    "每一次呼吸...都是新的开始...让自己沉浸在当下...感受此刻的平静...",
+                    "享受这段宁静的时光...让内心的平和...伴随你回到日常生活..."
+                ];
+
+                deepseekResponse = { paragraphs: testParagraphs };
+            } else {
+                // 正常模式：调用DeepSeek API生成引导语
+                console.log("[引导语生成] 开始调用 DeepSeek API");
+                deepseekResponse = await generateTextFromDeepSeek(userInput);
+            }
 
             if (!deepseekResponse || !deepseekResponse.paragraphs || deepseekResponse.paragraphs.length === 0) {
                 throw new Error("Failed to generate guidance text");
             }
 
-            console.log("[引导语生成] DeepSeek API 调用成功，段落数:", deepseekResponse.paragraphs.length);
+            console.log("[引导语生成] 成功获取引导语内容，段落数:", deepseekResponse.paragraphs.length);
 
             let audioUrl = undefined;
             let audioError = false;
             let audioErrorMessage = "";
 
-            // 2. 尝试调用豆包 TTS API 生成音频
+            // 尝试调用豆包 TTS API 生成音频
             try {
-                console.log("[引导语生成] 开始调用豆包 TTS API");
-                audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'));
+                console.log("[引导语生成] 开始调用豆包 TTS API" + (isTestMode ? " (测试模式)" : ""));
+                audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'), isTestMode);
                 console.log("[引导语生成] 豆包 TTS API 调用成功，获取到音频URL");
             } catch (e) {
                 const error = e as Error;
@@ -75,11 +95,13 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 // 音频生成失败，但不影响引导语创建
             }
 
-            // 3. 创建引导语对象并回调
+            // 创建引导语对象并回调
             const newGuidance = {
                 id: uuidv4(),
                 title: title,
-                description: userInput.substring(0, 100) + (userInput.length > 100 ? '...' : ''),
+                description: isTestMode
+                    ? "测试模式生成的引导语"
+                    : userInput.substring(0, 100) + (userInput.length > 100 ? '...' : ''),
                 paragraphs: deepseekResponse.paragraphs,
                 content: (
                     <div>
@@ -147,13 +169,13 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     };
 
     // 调用豆包 TTS API 生成音频
-    const generateAudioFromText = async (text: string) => {
+    const generateAudioFromText = async (text: string, isTest: boolean = false) => {
         const response = await fetch('/api/generate-audio', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text, isTest }),
         });
 
         if (!response.ok) {
@@ -200,13 +222,27 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             />
 
             <Textarea
-                placeholder={t("输入你的想法、感受或烦恼，我们将为你生成个性化的冥想引导语...", "Enter your thoughts, feelings, or concerns, and we'll generate a personalized meditation guidance for you...")}
+                placeholder={isTestMode ?
+                    t("测试模式：将使用预设文本", "Test mode: Will use preset text") :
+                    t("输入你的想法、感受或烦恼，我们将为你生成个性化的冥想引导语...", "Enter your thoughts, feelings, or concerns, and we'll generate a personalized meditation guidance for you...")}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 rows={4}
-                className={`mb-3 ${isDarkTheme ? 'bg-indigo-900/50 border-indigo-700' : 'bg-white border-blue-300'
-                    }`}
+                className={`mb-3 ${isDarkTheme ? 'bg-indigo-900/50 border-indigo-700' : 'bg-white border-blue-300'} ${isTestMode ? 'opacity-50' : ''}`}
+                disabled={isTestMode}
             />
+
+            <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                    id="test-mode"
+                    checked={isTestMode}
+                    onCheckedChange={setIsTestMode}
+                />
+                <Label htmlFor="test-mode" className={`text-sm ${isDarkTheme ? 'text-indigo-200' : 'text-blue-800'}`}>
+                    <FlaskConical className="h-4 w-4 inline-block mr-1" />
+                    {t("测试模式（使用预设文本，跳过DeepSeek API调用）", "Test mode (use preset text, skip DeepSeek API call)")}
+                </Label>
+            </div>
 
             <Button
                 onClick={generateGuidance}
@@ -222,7 +258,9 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 ) : (
                     <>
                         <Wand2 className="mr-2 h-4 w-4" />
-                        {t("生成引导语", "Generate Guidance")}
+                        {isTestMode ?
+                            t("生成测试引导语", "Generate Test Guidance") :
+                            t("生成引导语", "Generate Guidance")}
                     </>
                 )}
             </Button>

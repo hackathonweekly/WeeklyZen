@@ -49,21 +49,29 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
 
         try {
             // 1. 调用 DeepSeek API 生成引导语文本
+            console.log("[引导语生成] 开始调用 DeepSeek API");
             const deepseekResponse = await generateTextFromDeepSeek(userInput);
 
             if (!deepseekResponse || !deepseekResponse.paragraphs || deepseekResponse.paragraphs.length === 0) {
                 throw new Error("Failed to generate guidance text");
             }
 
+            console.log("[引导语生成] DeepSeek API 调用成功，段落数:", deepseekResponse.paragraphs.length);
+
             let audioUrl = undefined;
             let audioError = false;
+            let audioErrorMessage = "";
 
             // 2. 尝试调用豆包 TTS API 生成音频
             try {
+                console.log("[引导语生成] 开始调用豆包 TTS API");
                 audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'));
-            } catch (error) {
-                console.error("Error generating audio:", error);
+                console.log("[引导语生成] 豆包 TTS API 调用成功，获取到音频URL");
+            } catch (e) {
+                const error = e as Error;
+                console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
                 audioError = true;
+                audioErrorMessage = error.message || "Unknown error";
                 // 音频生成失败，但不影响引导语创建
             }
 
@@ -83,6 +91,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 audioUrl: audioUrl
             };
 
+            console.log("[引导语生成] 创建完成，准备添加到列表");
             onGuidanceCreated(newGuidance);
 
             // 重置输入
@@ -91,9 +100,11 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
 
             if (audioError) {
                 toast({
-                    title: t("引导语创建成功", "Guidance created successfully"),
-                    description: t("引导语创建成功，但音频生成失败。可能是因为API授权过期，请联系管理员。",
-                        "Your guidance was created but without audio. This might be due to expired API authorization."),
+                    title: t("引导语创建成功，但无音频", "Guidance created without audio"),
+                    description: t(
+                        `引导语创建成功，但音频生成失败: ${audioErrorMessage}`,
+                        `Your guidance was created but without audio: ${audioErrorMessage}`
+                    ),
                     variant: "default",
                 });
             } else {
@@ -102,11 +113,15 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                     description: t("你的自定义引导语已成功创建", "Your custom guidance has been created"),
                 });
             }
-        } catch (error) {
-            console.error("Error generating guidance:", error);
+        } catch (e) {
+            const error = e as Error;
+            console.error("[引导语生成] 错误:", error);
             toast({
                 title: t("生成失败", "Generation Failed"),
-                description: t("生成引导语时出现错误，请稍后再试", "An error occurred while generating guidance. Please try again later."),
+                description: t(
+                    `生成引导语时出现错误: ${error.message || "未知错误"}`,
+                    `An error occurred: ${error.message || "Unknown error"}`
+                ),
                 variant: "destructive",
             });
         } finally {
@@ -144,9 +159,24 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
         if (!response.ok) {
             // 特别处理 401 错误
             if (response.status === 401) {
-                throw new Error("API authorization failed (401): The API key or access token may have expired");
+                throw new Error("豆包API授权失败 (401): 可能是访问令牌已过期，请联系管理员");
             }
-            throw new Error(`API request failed with status ${response.status}`);
+
+            // 尝试获取详细错误信息
+            let errorMessage = `API request failed with status ${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+                if (errorData.details) {
+                    errorMessage += `: ${JSON.stringify(errorData.details)}`;
+                }
+            } catch (e) {
+                // 如果无法解析JSON，使用原始错误消息
+            }
+
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();

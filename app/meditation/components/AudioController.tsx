@@ -26,45 +26,46 @@ export function AudioController({
   isDarkTheme
 }: AudioControllerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
+
   // 处理音频播放
   useEffect(() => {
-    if (!audioRef.current) return;
-    
-    if (selectedSound && isPlaying) {
-      // 设置音频源
-      if (audioRef.current.src !== selectedSound.audioUrl) {
-        audioRef.current.src = selectedSound.audioUrl;
-        audioRef.current.loop = true;
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.volume = volume;
+      audio.loop = true;
+
+      if (selectedSound && isPlaying) {
+        // 设置音频源
+        if (audio.src !== selectedSound.audioUrl) {
+          audio.src = selectedSound.audioUrl;
+        }
+
+        // 设置音量
+        audio.volume = isMuted ? 0 : volume / 100;
+
+        // 播放音频
+        audio.play().catch(console.error);
+      } else {
+        // 暂停音频
+        audio.pause();
       }
-      
-      // 设置音量
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
-      
-      // 播放音频
-      audioRef.current.play().catch(error => {
-        console.error('播放音频失败:', error);
-      });
-    } else {
-      // 暂停音频
-      audioRef.current.pause();
     }
-    
-    // 组件卸载时清理
+
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (audio) {
+        audio.pause();
+        audio.src = '';
       }
     };
   }, [selectedSound, isPlaying, volume, isMuted]);
-  
+
   // 处理音量变化
   useEffect(() => {
     if (!audioRef.current) return;
     audioRef.current.volume = isMuted ? 0 : volume / 100;
   }, [volume, isMuted]);
-  
+
   return (
     <div className="flex items-center space-x-2 w-full">
       <Button
@@ -75,7 +76,7 @@ export function AudioController({
       >
         {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
       </Button>
-      
+
       <Slider
         value={[volume]}
         min={0}
@@ -84,7 +85,7 @@ export function AudioController({
         onValueChange={(value) => onVolumeChange(value[0])}
         className={`${isDarkTheme ? 'bg-indigo-900/50' : 'bg-blue-100'}`}
       />
-      
+
       <audio ref={audioRef} loop />
     </div>
   );

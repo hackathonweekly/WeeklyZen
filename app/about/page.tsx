@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAppTheme } from "@/contexts/theme-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Image from 'next/image';
 
 export default function AboutPage() {
   const { t } = useLanguage();
@@ -40,7 +41,7 @@ export default function AboutPage() {
         <div className="absolute inset-0 -z-10 opacity-30">
           <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-blue-950/50 to-indigo-950/80' : 'bg-gradient-to-b from-blue-100/50 to-indigo-100/80'}`} />
           <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent ${isDarkTheme ? 'via-indigo-500/20' : 'via-blue-500/20'} to-transparent`} />
-          
+
           {/* 添加星空效果 */}
           <div className="absolute inset-0 opacity-60">
             {Array.from({ length: 50 }).map(() => {
@@ -51,7 +52,7 @@ export default function AboutPage() {
               const left = Math.random() * 100;
               const duration = Math.random() * 5 + 5;
               const delay = Math.random() * 5;
-              
+
               return (
                 <motion.div
                   key={uniqueId}
@@ -244,14 +245,16 @@ export default function AboutPage() {
                   "Whether you're new to meditation or an experienced practitioner, we welcome you to join the WeeklyZen group and explore inner peace together. Follow our WeChat official account or send an email to contact@weeklyzen.com"
                 )}
               </p>
-              
+
               {/* 微信公众号二维码 */}
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-8">
                 <div className={`${isDarkTheme ? 'bg-white/10' : 'bg-white'} p-4 rounded-xl shadow-md ${isDarkTheme ? 'shadow-indigo-500/10' : 'shadow-blue-300/20'}`}>
                   <div className="relative w-[150px] h-[150px]">
-                    <img 
-                      src="/wechat_qrcode.jpg" 
-                      alt={t("周周冥想微信公众号", "WeeklyZen WeChat Official Account")} 
+                    <Image
+                      src="/wechat_qrcode.jpg"
+                      alt={t("周周冥想微信公众号", "WeeklyZen WeChat Official Account")}
+                      width={150}
+                      height={150}
                       className="w-full h-full object-cover rounded-md"
                     />
                   </div>
@@ -259,7 +262,7 @@ export default function AboutPage() {
                     {t("扫码关注微信公众号", "Scan to follow our WeChat account")}
                   </p>
                 </div>
-                
+
                 <div className={`max-w-sm ${isDarkTheme ? 'text-indigo-100/90' : 'text-slate-700'} text-left`}>
                   <h3 className={`text-xl font-medium ${themeStyles.primaryText} mb-2`}>
                     {t("关注公众号获取", "Follow our WeChat account for")}
@@ -280,16 +283,15 @@ export default function AboutPage() {
                   </ul>
                 </div>
               </div>
-              
+
               <div className="flex justify-center gap-4">
                 <Link href="/meditation">
                   <Button
                     variant="outline"
-                    className={`px-8 py-2 rounded-full ${
-                      isDarkTheme 
-                        ? " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
-                        : " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
-                    } backdrop-blur-sm transition-all duration-200`}
+                    className={`px-8 py-2 rounded-full ${isDarkTheme
+                      ? " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                      : " bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                      } backdrop-blur-sm transition-all duration-200`}
                   >
                     {t("开始冥想", "Start Meditating")}
                   </Button>

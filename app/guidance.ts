@@ -11,6 +11,7 @@ export interface GuidanceType {
   title: string;
   description: string;
   paragraphs: string[];
+  audioUrl?: string;
 }
 
 // 引导语基本信息
@@ -51,13 +52,13 @@ export function useGuidanceTexts() {
               throw new Error(`Failed to load ${info.id}.txt: ${response.status}`);
             }
             const text = await response.text();
-            
+
             // 按段落分割文本
             const paragraphs = text
               .split('\n')
               .filter(line => line.trim() !== '')
               .map(line => line.trim());
-            
+
             loadedGuidances.push({
               ...info,
               paragraphs,
@@ -76,7 +77,7 @@ export function useGuidanceTexts() {
 
         // 等待所有文件加载完成
         await Promise.all(promises);
-        
+
         setGuidanceTexts(loadedGuidances);
         setLoading(false);
       } catch (err) {

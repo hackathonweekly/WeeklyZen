@@ -12,6 +12,7 @@ import { useTheme } from "next-themes";
 import { useAppTheme } from '@/contexts/theme-context';
 import { DialogContent } from "@/components/ui/dialog";
 import { BreathingSphere } from '@/components/breathing-sphere';
+import Image from 'next/image';
 
 export default function IndexPage() {
   const isMobile = useIsMobile();
@@ -20,12 +21,12 @@ export default function IndexPage() {
   const { theme } = useTheme();
   const { isDarkTheme, themeStyles } = useAppTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   // 组件挂载检查，确保只在客户端渲染后应用样式
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // 监听滚动事件
   useEffect(() => {
     const handleScroll = () => {
@@ -54,37 +55,37 @@ export default function IndexPage() {
       </div>
     );
   }
-  
+
   return (
     <div className={`min-h-screen overflow-hidden ${themeStyles.background}`}>
       <SiteHeader scrolled={scrolled} />
-      
+
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         {/* 背景动画 */}
         <div className="absolute inset-0">
           {/* 柔和的波浪动画 - 调整透明度和大小 */}
-          <motion.div 
+          <motion.div
             className="absolute inset-0 opacity-10"
-            style={{ 
-              background: isDarkTheme 
+            style={{
+              background: isDarkTheme
                 ? "radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, transparent 70%)"
                 : "radial-gradient(circle at center, rgba(37, 99, 235, 0.3) 0%, transparent 70%)",
             }}
-            animate={{ 
+            animate={{
               scale: [1.5, 1.7, 1.5],
               opacity: [0.1, 0.15, 0.1],
             }}
-            transition={{ 
-              duration: 15, 
+            transition={{
+              duration: 15,
               repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
             }}
           />
-          
+
           {/* 呼吸球容器 - 绝对定位在第一屏中心 */}
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vmin] h-[70vmin] pointer-events-none`}>
-            <BreathingSphere 
+            <BreathingSphere
               isPlaying={true}
               showText={false}
               size="large"
@@ -92,7 +93,7 @@ export default function IndexPage() {
             />
           </div>
         </div>
-        
+
         {/* 主标题区域 */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center px-4 max-w-4xl mx-auto">
           <motion.div
@@ -104,7 +105,7 @@ export default function IndexPage() {
             <div className={`text-sm md:text-base ${isDarkTheme ? 'text-indigo-500' : 'text-blue-900'} font-medium tracking-wide uppercase mb-1`}>
               {t("周周冥想", "Weekly Zen")}
             </div>
-            
+
             <AnimatePresence mode="wait">
               <motion.div
                 key="breathing-text"
@@ -118,7 +119,7 @@ export default function IndexPage() {
               </motion.div>
             </AnimatePresence>
           </motion.div>
-          
+
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -130,7 +131,7 @@ export default function IndexPage() {
               "Who controls his breath controls his life"
             )}
           </motion.h1>
-          
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -142,7 +143,7 @@ export default function IndexPage() {
               "WeeklyZen is a warm meditation group dedicated to providing a simple and sustainable meditation space for makers and developers."
             )}
           </motion.p>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -152,11 +153,10 @@ export default function IndexPage() {
             <Link href="/meditation">
               <Button
                 size={isMobile ? "default" : "lg"}
-                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${
-                  isDarkTheme 
-                    ? "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
-                    : "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
-                } backdrop-blur-sm transition-all duration-200`}
+                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${isDarkTheme
+                  ? "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                  : "border border-blue-500/50 bg-blue-600/95 text-indigo-100 hover:bg-blue-400/95"
+                  } backdrop-blur-sm transition-all duration-200`}
               >
                 <span className="relative z-10">{t("开始冥想", "Start Meditation")}</span>
               </Button>
@@ -165,24 +165,23 @@ export default function IndexPage() {
               <Button
                 size={isMobile ? "default" : "lg"}
                 variant="outline"
-                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${
-                  isDarkTheme 
-                    ? "border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
-                    : "border-blue-200/50 bg-indigo-100/95 text-blue-600 hover:bg-indigo-200/95"
-                } transition-all duration-200`}
+                className={`w-full sm:w-auto px-6 sm:px-10 py-2.5 sm:py-6 rounded-full ${isDarkTheme
+                  ? "border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
+                  : "border-blue-200/50 bg-indigo-100/95 text-blue-600 hover:bg-indigo-200/95"
+                  } transition-all duration-200`}
               >
                 {t("冥想入门", "Introduction")}
               </Button>
             </Link>
           </motion.div>
         </div>
-        
+
         {/* 向下滚动提示 */}
-        <motion.div 
+        <motion.div
           className={`absolute bottom-8 left-0 right-0 mx-auto w-max flex flex-col items-center ${isDarkTheme ? 'text-indigo-300/60' : 'text-blue-700/60'} cursor-pointer`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, y: [0, 10, 0] }}
-          transition={{ 
+          transition={{
             opacity: { delay: 2, duration: 1 },
             y: { delay: 2, duration: 2, repeat: Number.POSITIVE_INFINITY, repeatType: "loop" }
           }}
@@ -192,7 +191,7 @@ export default function IndexPage() {
           <ChevronDown size={20} />
         </motion.div>
       </section>
-      
+
       {/* 核心理念部分 */}
       <section className="py-20 sm:py-28 relative overflow-hidden">
         {/* 背景效果 */}
@@ -200,9 +199,9 @@ export default function IndexPage() {
           <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-blue-950/30 to-indigo-950/50' : 'bg-gradient-to-b from-purple-100/50 to-blue-100/70'}`} />
           <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent ${isDarkTheme ? 'via-indigo-500/20' : 'via-blue-400/30'} to-transparent`} />
         </div>
-        
+
         <div className="container max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
@@ -219,10 +218,10 @@ export default function IndexPage() {
               )}
             </p>
           </motion.div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             {/* 核心价值 */}
-            <motion.div 
+            <motion.div
               className={`${themeStyles.cardBackground} rounded-2xl p-8 backdrop-blur-md border ${themeStyles.cardBorder} shadow-lg ${isDarkTheme ? 'shadow-indigo-900/5' : 'shadow-blue-300/10'} relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -246,9 +245,9 @@ export default function IndexPage() {
                 </p>
               </div>
             </motion.div>
-            
+
             {/* 参与方式 */}
-            <motion.div 
+            <motion.div
               className={`${themeStyles.cardBackground} rounded-2xl p-8 backdrop-blur-md border ${themeStyles.cardBorder} shadow-lg ${isDarkTheme ? 'shadow-indigo-900/5' : 'shadow-blue-300/10'} relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -272,9 +271,9 @@ export default function IndexPage() {
                 </p>
               </div>
             </motion.div>
-            
+
             {/* 资源链接 */}
-            <motion.div 
+            <motion.div
               className={`${themeStyles.cardBackground} rounded-2xl p-8 backdrop-blur-md border ${themeStyles.cardBorder} shadow-lg ${isDarkTheme ? 'shadow-indigo-900/5' : 'shadow-blue-300/10'} relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -301,13 +300,13 @@ export default function IndexPage() {
           </div>
         </div>
       </section>
-      
+
       {/* 引言部分 */}
       <section className="py-20 sm:py-28 relative overflow-hidden">
         {/* 背景效果 */}
         <div className="absolute inset-0 -z-10 opacity-40">
           <div className="absolute inset-0 bg-gradient-to-b from-blue-950/50 to-indigo-950/30" />
-          <motion.div 
+          <motion.div
             className="absolute inset-0 opacity-20"
             animate={{
               backgroundPosition: ['0% 0%', '100% 100%'],
@@ -323,7 +322,7 @@ export default function IndexPage() {
             }}
           />
         </div>
-        
+
         <div className="container max-w-4xl mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -342,7 +341,7 @@ export default function IndexPage() {
           </motion.div>
         </div>
       </section>
-      
+
       {/* 冥想益处 */}
       <section className="py-20 sm:py-28 relative overflow-hidden">
         {/* 背景效果 */}
@@ -350,9 +349,9 @@ export default function IndexPage() {
           <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-purple-950/30 to-blue-950/50' : 'bg-gradient-to-b from-purple-100/50 to-blue-100/70'}`} />
           <div className={`absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent ${isDarkTheme ? 'via-indigo-500/20' : 'via-blue-400/30'} to-transparent`} />
         </div>
-        
+
         <div className="container max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
@@ -369,9 +368,9 @@ export default function IndexPage() {
               )}
             </p>
           </motion.div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <motion.div 
+            <motion.div
               className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -386,8 +385,8 @@ export default function IndexPage() {
                 {t("减少分心，更快进入深度工作状态", "Reduce distractions, enter deep work states faster")}
               </p>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -402,8 +401,8 @@ export default function IndexPage() {
                 {t("清空杂念，让灵感自然流动", "Clear your mind, let inspiration flow naturally")}
               </p>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -418,8 +417,8 @@ export default function IndexPage() {
                 {t("高效管理情绪，保持思维清晰", "Manage emotions efficiently, maintain mental clarity")}
               </p>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className={`p-6 border ${themeStyles.cardBorder} rounded-xl ${isDarkTheme ? 'bg-blue-950/20' : 'bg-white/70'} backdrop-blur-sm relative overflow-hidden group`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -437,25 +436,25 @@ export default function IndexPage() {
           </div>
         </div>
       </section>
-      
+
       {/* 加入按钮 */}
       <section className="py-20 sm:py-28 mb-10 relative overflow-hidden">
         {/* 背景动画 */}
         <div className="absolute inset-0 -z-10">
           <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-b from-blue-950/50 to-indigo-950/80' : 'bg-gradient-to-b from-blue-100/70 to-indigo-100/50'}`} />
-          <motion.div 
+          <motion.div
             className="absolute inset-0 opacity-10"
-            animate={{ 
+            animate={{
               backgroundPosition: ['0% 0%', '100% 100%'],
             }}
-            transition={{ 
-              duration: 60, 
+            transition={{
+              duration: 60,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: 'reverse',
               ease: "linear",
             }}
             style={{
-              backgroundImage: isDarkTheme 
+              backgroundImage: isDarkTheme
                 ? `radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.4) 0%, transparent 50%),
                    radial-gradient(circle at 70% 60%, rgba(79, 70, 229, 0.4) 0%, transparent 50%),
                    radial-gradient(circle at 40% 80%, rgba(124, 58, 237, 0.4) 0%, transparent 50%),
@@ -468,7 +467,7 @@ export default function IndexPage() {
             }}
           />
         </div>
-        
+
         <div className="container max-w-6xl mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -487,13 +486,12 @@ export default function IndexPage() {
               )}
             </p>
             <Link href="/introduction">
-              <Button 
-                size="lg" 
-                className={`rounded-full px-8 py-6 ${
-                  isDarkTheme
-                    ? "border border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
-                    : "border border-blue-200/50 bg-white/95 text-blue-600 hover:bg-blue-50/95"
-                } backdrop-blur-sm transition-all duration-200`}
+              <Button
+                size="lg"
+                className={`rounded-full px-8 py-6 ${isDarkTheme
+                  ? "border border-indigo-600/30 bg-indigo-950/95 text-indigo-100 hover:bg-indigo-900/95"
+                  : "border border-blue-200/50 bg-white/95 text-blue-600 hover:bg-blue-50/95"
+                  } backdrop-blur-sm transition-all duration-200`}
               >
                 <span className="relative z-10">{t("了解如何加入", "Learn How to Join")}</span>
               </Button>
@@ -501,7 +499,7 @@ export default function IndexPage() {
           </motion.div>
         </div>
       </section>
-      
+
       {/* 页脚 */}
       <footer className={`py-12 border-t ${isDarkTheme ? 'border-blue-800/20' : 'border-blue-300/30'}`}>
         <div className="container mx-auto px-4 max-w-6xl">
@@ -510,20 +508,22 @@ export default function IndexPage() {
               <div className={`text-lg font-medium ${themeStyles.primaryText}`}>WeeklyZen</div>
               <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'}`}>{t("周周冥想小组", "Weekly Meditation Group")}</div>
             </div>
-            
+
             <div className="flex flex-col items-center mb-6 md:mb-0">
               <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} mb-2 text-center`}>
                 {t("关注微信公众号", "Follow WeChat Official Account")}
               </div>
               <div className={`w-24 h-24 md:w-28 md:h-28 rounded-md overflow-hidden border ${isDarkTheme ? 'border-indigo-800/30' : 'border-blue-200/50'} p-1 bg-white`}>
-                <img 
-                  src="/wechat_qrcode.jpg" 
-                  alt={t("微信公众号二维码", "WeChat QR Code")} 
+                <Image
+                  src="/wechat_qrcode.jpg"
+                  alt={t("微信公众号二维码", "WeChat QR Code")}
+                  width={96}
+                  height={96}
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
-            
+
             <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} text-center md:text-right`}>
               <p className="mb-2">© 2024 WeeklyZen</p>
               <p>{t("版权声明: CC BY-NC-SA 4.0", "License: CC BY-NC-SA 4.0")}</p>

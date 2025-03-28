@@ -153,6 +153,7 @@ export default function MeditationPage() {
     description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
     paragraphs: [],
     content: <></>,
+    type: 'none' // 添加缺失的 type 属性
   });
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
 
@@ -712,9 +713,15 @@ export default function MeditationPage() {
       paragraphs: [],
       content: <></>,
     };
-
     // 设置默认选中为无引导语
-    setSelectedGuidance(noGuidanceOption);
+    setSelectedGuidance({
+      id: 'no-guidance',
+      type: 'none', // 添加缺失的 type 属性
+      title: t('无引导语', 'No Guidance'),
+      description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
+      paragraphs: [],
+      content: <></>,
+    });
 
     // ... [其他初始化代码]
   }, []);
@@ -1019,7 +1026,10 @@ export default function MeditationPage() {
             </span>
           </div>
           <div className="text-xs mt-1 opacity-80 px-2">
-            {t("来源：周周冥想", "Source: WeeklyZen")} | {13} {t("分钟", "min")}
+            {selectedGuidance.type === 'custom'
+              ? t("来源：自定义", "Source: Custom") + " | " + t("不低于7分钟", "At least 7 minutes")
+              : t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")
+            }
           </div>
         </div>
       )}
@@ -1095,7 +1105,10 @@ export default function MeditationPage() {
             <GuidanceSelector
               guidances={guidanceTexts}
               selectedGuidance={selectedGuidance}
-              onGuidanceSelect={handleGuidanceSelect}
+              onGuidanceSelect={(guidance) => {
+                // 添加 type 属性以满足类型要求
+                handleGuidanceSelect({ ...guidance, type: 'guidance' });
+              }}
               onShowFullText={handleShowGuidanceText}
               isDarkTheme={isDarkTheme}
               t={t}

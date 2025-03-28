@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -225,6 +225,7 @@ export default function MeditationPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, timeLeft]);
 
   // 点击外部关闭音量滑块
@@ -249,33 +250,20 @@ export default function MeditationPage() {
 
   // 组件卸载时清理
   useEffect(() => {
+    const currentAudio = audioRef.current;
+    const currentEndSound = endSoundRef.current;
+    const currentAudioManager = audioManager.current;
+
     return () => {
-      // 停止所有音频
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (currentAudio) {
+        currentAudio.pause();
       }
 
-      if (endSoundRef.current) {
-        endSoundRef.current.pause();
-        endSoundRef.current.src = '';
+      if (currentEndSound) {
+        currentEndSound.pause();
       }
-
-      if (guidanceAudio) {
-        guidanceAudio.pause();
-        guidanceAudio.src = '';
-      }
-
-      if (courseAudio) {
-        courseAudio.pause();
-        courseAudio.src = '';
-      }
-
-      // 停止Web Audio API音频
-      audioManager.current.stopAllSounds();
-      audioManager.current.closeAudioContext();
     };
-  }, [guidanceAudio, courseAudio]);
+  }, []);
 
   // 处理音效选择
   const handleSoundSelect = (sound: SoundData | null) => {
@@ -583,25 +571,15 @@ export default function MeditationPage() {
     console.log('[调试] 冥想重置完成');
   };
 
-  // 处理计时器结束
-  const handleTimerEnd = () => {
-    setIsPlaying(false);
-    setIsPlayingEndSound(true);
-
-    // 立即显示鼓励语，不等待钟声播放完毕
-    showEncouragement();
-
-    // 停止背景音效
+  // 使用useCallback包装handleTimerEnd函数
+  const handleTimerEnd = useCallback(() => {
+    // 停止所有音频
     if (audioRef.current) {
       audioRef.current.pause();
     }
-
-    // 停止引导语音频
     if (guidanceAudio) {
       guidanceAudio.pause();
     }
-
-    // 停止课程音频
     if (courseAudio) {
       courseAudio.pause();
     }
@@ -637,7 +615,14 @@ export default function MeditationPage() {
     };
 
     endSound();
-  };
+
+    // 显示鼓励信息
+    showEncouragement();
+
+    // 重置状态
+    setIsPlaying(false);
+    setShowGuidanceTextDialog(false);
+  }, [guidanceAudio, courseAudio, showEncouragement, volume, isMuted]);
 
   // 处理时长选择
   const handleDurationSelect = (duration: number) => {
@@ -732,7 +717,7 @@ export default function MeditationPage() {
     setSelectedGuidance(noGuidanceOption);
 
     // ... [其他初始化代码]
-  }, [t]);
+  }, []);
 
   // 更新showGuidanceDialog的设置逻辑，确保在播放状态下无法打开
   const handleShowGuidanceDialog = () => {

@@ -11,12 +11,13 @@ export async function POST(request: Request) {
             );
         }
 
-        const apiEndpoint = process.env.DEEPSEEK_API_ENDPOINT || 'https://aiproxy.gzg.sealos.run';
-        const apiKey = process.env.DEEPSEEK_API_KEY;
+        const apiEndpoint = process.env.OPENAI_API_BASE_URL || 'https://api.openai.com';
+        const apiKey = process.env.OPENAI_API_KEY;
+        const modelName = process.env.OPENAI_MODEL_NAME || 'gpt-4';
 
         if (!apiKey) {
             return NextResponse.json(
-                { error: 'DeepSeek API key not configured' },
+                { error: 'OpenAI API key not configured' },
                 { status: 500 }
             );
         }
@@ -54,9 +55,9 @@ export async function POST(request: Request) {
 }
 其中每个段落都是完整的引导语部分，包含恰当的省略号停顿。`;
 
-        console.log('[DeepSeek API 请求] 生成引导语，用户输入:', input.substring(0, 50) + (input.length > 50 ? '...' : ''));
+        console.log('[OpenAI API 请求] 生成引导语，用户输入:', input.substring(0, 50) + (input.length > 50 ? '...' : ''));
 
-        // 调用DeepSeek API
+        // 调用OpenAI API
         const response = await fetch(`${apiEndpoint}/v1/chat/completions`, {
             method: 'POST',
             headers: {
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: modelName,
                 messages: [
                     {
                         role: 'user',
@@ -78,9 +79,9 @@ export async function POST(request: Request) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('DeepSeek API error:', errorData);
+            console.error('OpenAI API error:', errorData);
             return NextResponse.json(
-                { error: 'Failed to generate text from DeepSeek API' },
+                { error: 'Failed to generate text from OpenAI API' },
                 { status: response.status }
             );
         }
@@ -89,13 +90,13 @@ export async function POST(request: Request) {
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
             return NextResponse.json(
-                { error: 'Invalid response from DeepSeek API' },
+                { error: 'Invalid response from OpenAI API' },
                 { status: 500 }
             );
         }
 
-        // 打印DeepSeek API的原始响应内容
-        console.log('[DeepSeek API 响应] 原始内容:', data.choices[0].message.content.substring(0, 200) + '...');
+        // 打印OpenAI API的原始响应内容
+        console.log('[OpenAI API 响应] 原始内容:', data.choices[0].message.content.substring(0, 200) + '...');
 
         // 尝试从AI响应中解析JSON
         try {
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
 
             if (jsonMatch) {
                 const jsonContent = JSON.parse(jsonMatch[0]);
-                console.log('[DeepSeek API 处理] 成功解析JSON格式的响应，段落数:', jsonContent.paragraphs?.length || 0);
+                console.log('[OpenAI API 处理] 成功解析JSON格式的响应，段落数:', jsonContent.paragraphs?.length || 0);
                 return NextResponse.json(jsonContent);
             } else {
                 // 如果没有找到JSON格式，尝试将文本分段
@@ -112,18 +113,18 @@ export async function POST(request: Request) {
                     .split('\n\n')
                     .filter((p: string) => p.trim().length > 0);
 
-                console.log('[DeepSeek API 处理] 未找到JSON格式，使用分段处理，段落数:', paragraphs.length);
+                console.log('[OpenAI API 处理] 未找到JSON格式，使用分段处理，段落数:', paragraphs.length);
                 return NextResponse.json({ paragraphs });
             }
         } catch (parseError) {
-            console.error('[DeepSeek API 处理] 解析响应时出错:', parseError);
+            console.error('[OpenAI API 处理] 解析响应时出错:', parseError);
 
             // 如果解析失败，尝试将文本分段
             const paragraphs = data.choices[0].message.content
                 .split('\n\n')
                 .filter((p: string) => p.trim().length > 0);
 
-            console.log('[DeepSeek API 处理] 使用备用分段处理，段落数:', paragraphs.length);
+            console.log('[OpenAI API 处理] 使用备用分段处理，段落数:', paragraphs.length);
             return NextResponse.json({ paragraphs });
         }
     } catch (error) {

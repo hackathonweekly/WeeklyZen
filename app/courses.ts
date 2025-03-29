@@ -79,7 +79,7 @@ export const courses: CourseData[] = [
     iconType: 'course',
     source: '潮汐APP'
   },
-  
+
   // 专题练习
   {
     id: 'bodyscan',

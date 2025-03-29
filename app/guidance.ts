@@ -6,7 +6,7 @@ import path from 'path';
 
 // 定义引导语类型
 export interface GuidanceType {
-  type: string;
+  type: 'preset' | 'custom' | 'none';
   content: ReactNode;
   id: string;
   title: string;
@@ -21,16 +21,19 @@ const guidanceInfo = [
     id: 'basic',
     title: '基础引导',
     description: '适合初学者的简单引导',
+    type: 'preset' as const
   },
   {
     id: 'breath',
     title: '呼吸观察',
     description: '专注于呼吸的冥想练习',
+    type: 'preset' as const
   },
   {
     id: 'body',
     title: '身体扫描',
     description: '从头到脚感受身体的冥想',
+    type: 'preset' as const
   }
 ];
 
@@ -64,7 +67,7 @@ export function useGuidanceTexts() {
               ...info,
               paragraphs,
               content: paragraphs.join('\n'),
-              type: ''
+              type: 'preset' as const
             });
           } catch (err) {
             console.error(`Error loading ${info.id}.txt:`, err);
@@ -73,7 +76,7 @@ export function useGuidanceTexts() {
               ...info,
               paragraphs: [`无法加载 ${info.id} 引导语内容`],
               content: `无法加载 ${info.id} 引导语内容`,
-              type: ''
+              type: 'preset' as const
             });
           }
         });

@@ -295,7 +295,7 @@ export default function MeditationPage() {
     }
 
     // 设置选中的引导语
-    console.log('[调试] 选中引导语:', guidance.id, guidance.title);
+    console.log('[调试] 选中引导语:', guidance.id, guidance.title, guidance.type);
     setSelectedGuidance(guidance);
     setShowGuidanceDialog(false);
 
@@ -703,7 +703,7 @@ export default function MeditationPage() {
     }
   };
 
-  // 在useEffect中初始化时添加无引导语选项
+  // 在useEffect中初始化时添加无引导语和自定义引导语选项
   useEffect(() => {
     // 创建无引导语选项
     const noGuidanceOption = {
@@ -712,15 +712,26 @@ export default function MeditationPage() {
       description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
       paragraphs: [],
       content: <></>,
+      type: 'none'
     };
-    // 设置默认选中为无引导语
-    setSelectedGuidance({
-      id: 'no-guidance',
-      type: 'none', // 添加缺失的 type 属性
-      title: t('无引导语', 'No Guidance'),
-      description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
+
+    // 创建自定义引导语选项
+    const customGuidanceOption = {
+      id: 'custom-guidance',
+      title: t('创建专属引导语', 'Create Custom Guidance'),
+      description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
       paragraphs: [],
       content: <></>,
+      type: 'custom'
+    };
+    // 设置默认选中为自定义引导语
+    setSelectedGuidance({
+      id: 'custom-guidance',
+      title: t('创建专属引导语', 'Create Custom Guidance'),
+      description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
+      paragraphs: [],
+      content: <></>,
+      type: 'custom' as const
     });
 
     // ... [其他初始化代码]
@@ -1015,24 +1026,31 @@ export default function MeditationPage() {
       )}
 
       {/* 选中引导语显示 */}
-      {selectedGuidance && selectedGuidance.id !== 'no-guidance' && (
-        <div className={`text-center px-4 py-2 ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'}`}>
-          <div className="flex items-center justify-center flex-wrap">
-            <Volume2 size={16} className="mr-2" />
-            <span className="font-semibold">
-              {selectedGuidance.id.startsWith('custom-')
-                ? t("自定义创建引导语", "Custom Guidance")
-                : selectedGuidance.title}
-            </span>
-          </div>
-          <div className="text-xs mt-1 opacity-80 px-2">
-            {selectedGuidance.type === 'custom'
-              ? t("来源：自定义", "Source: Custom") + " | " + t("不低于7分钟", "At least 7 minutes")
-              : t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")
-            }
-          </div>
+      <div className={`text-center px-4 py-2 ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'}`}>
+        {/* 顶部提示词 - 始终显示 */}
+        <div className="text-xs opacity-60 mb-1">
+          {t("分享你的困扰，AI 为你定制专属冥想引导", "Share your concerns, let AI create your personalized meditation guidance")}
         </div>
-      )}
+
+        {selectedGuidance && selectedGuidance.id !== 'no-guidance' && (
+          <>
+            <div className="flex items-center justify-center flex-wrap">
+              <Volume2 size={16} className="mr-2" />
+              <span className="font-semibold">
+                {selectedGuidance.id.startsWith('custom-')
+                  ? t("自定义创建引导语", "Custom Guidance")
+                  : selectedGuidance.title}
+              </span>
+            </div>
+            <div className="text-xs mt-1 opacity-80 px-2">
+              {selectedGuidance.type === 'custom'
+                ? t("来源：自定义", "Source: Custom") + " | " + t("不低于7分钟", "At least 7 minutes")
+                : t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")
+              }
+            </div>
+          </>
+        )}
+      </div>
 
       {/* 主要内容 - 响应式布局优化 */}
       <div className="flex-1 flex flex-col items-center justify-center relative">
@@ -1107,7 +1125,7 @@ export default function MeditationPage() {
               selectedGuidance={selectedGuidance}
               onGuidanceSelect={(guidance) => {
                 // 添加 type 属性以满足类型要求
-                handleGuidanceSelect({ ...guidance, type: 'guidance' });
+                handleGuidanceSelect({ ...guidance, type: 'preset', audioUrl: guidance.audioUrl || undefined });
               }}
               onShowFullText={handleShowGuidanceText}
               isDarkTheme={isDarkTheme}

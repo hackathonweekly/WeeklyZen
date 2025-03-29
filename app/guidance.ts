@@ -6,6 +6,7 @@ import path from 'path';
 
 // 定义引导语类型
 export interface GuidanceType {
+  type: string;
   content: ReactNode;
   id: string;
   title: string;
@@ -62,7 +63,8 @@ export function useGuidanceTexts() {
             loadedGuidances.push({
               ...info,
               paragraphs,
-              content: paragraphs.join('\n')
+              content: paragraphs.join('\n'),
+              type: ''
             });
           } catch (err) {
             console.error(`Error loading ${info.id}.txt:`, err);
@@ -70,7 +72,8 @@ export function useGuidanceTexts() {
             loadedGuidances.push({
               ...info,
               paragraphs: [`无法加载 ${info.id} 引导语内容`],
-              content: `无法加载 ${info.id} 引导语内容`
+              content: `无法加载 ${info.id} 引导语内容`,
+              type: ''
             });
           }
         });

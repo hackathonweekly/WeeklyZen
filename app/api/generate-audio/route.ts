@@ -8,7 +8,9 @@ export async function POST(request: Request) {
 
         // 测试模式：直接使用预设文本进行测试，不依赖DeepSeek API
         const testText = "欢迎来到这段平静的时光............让我们暂时放下所有的烦恼...给自己一个喘息的机会...在这里...你可以完全放松下来...不必担心任何事...";
-        const finalText = isTest ? testText : text;
+
+        // 如果 text 是对象且包含 fullText 字段，使用 fullText
+        const finalText = isTest ? testText : (typeof text === 'object' && text.fullText ? text.fullText : text);
 
         if (!finalText || typeof finalText !== 'string') {
             return NextResponse.json(
@@ -20,6 +22,9 @@ export async function POST(request: Request) {
         // 输出测试信息
         if (isTest) {
             console.log('[豆包TTS API 测试模式] 使用预设文本:', testText.substring(0, 50) + '...');
+        } else {
+            console.log('[豆包TTS API] 接收到的文本长度:', finalText.length);
+            console.log('[豆包TTS API] 文本预览:', finalText.substring(0, 100) + '...');
         }
 
         // 从环境变量获取豆包TTS API配置
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
                 encoding: "mp3",
                 language: "zh",
                 speed_ratio: 0.74,
-                volume_ratio: 0.9,
+                volume_ratio: 1.2,
                 pitch_ratio: 0.68,
             },
             request: {
@@ -92,10 +97,10 @@ export async function POST(request: Request) {
             console.log('[豆包TTS API] 响应消息:', responseData.message);
 
             // 输出响应结构，帮助调试
-            console.log('[豆包TTS API] 响应结构:', Object.keys(responseData).join(', '));
-            if (responseData.data) {
-                console.log('[豆包TTS API] data字段结构:', Object.keys(responseData.data).join(', '));
-            }
+            // console.log('[豆包TTS API] 响应结构:', Object.keys(responseData).join(', '));
+            // if (responseData.data) {
+            //     console.log('[豆包TTS API] data字段结构:', Object.keys(responseData.data).join(', '));
+            // }
         } catch (e) {
             console.error('[豆包TTS API] 响应不是有效的JSON:', responseText.substring(0, 100));
             responseData = null;

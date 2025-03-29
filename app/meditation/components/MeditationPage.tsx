@@ -295,7 +295,7 @@ export default function MeditationPage() {
     }
 
     // 设置选中的引导语
-    console.log('[调试] 选中引导语:', guidance.id, guidance.title);
+    console.log('[调试] 选中引导语:', guidance.id, guidance.title, guidance.type);
     setSelectedGuidance(guidance);
     setShowGuidanceDialog(false);
 
@@ -703,7 +703,7 @@ export default function MeditationPage() {
     }
   };
 
-  // 在useEffect中初始化时添加无引导语选项
+  // 在useEffect中初始化时添加无引导语和自定义引导语选项
   useEffect(() => {
     // 创建无引导语选项
     const noGuidanceOption = {
@@ -712,15 +712,26 @@ export default function MeditationPage() {
       description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
       paragraphs: [],
       content: <></>,
+      type: 'none'
     };
-    // 设置默认选中为无引导语
-    setSelectedGuidance({
-      id: 'no-guidance',
-      type: 'none', // 添加缺失的 type 属性
-      title: t('无引导语', 'No Guidance'),
-      description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
+
+    // 创建自定义引导语选项
+    const customGuidanceOption = {
+      id: 'custom-guidance',
+      title: t('创建专属引导语', 'Create Custom Guidance'),
+      description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
       paragraphs: [],
       content: <></>,
+      type: 'custom'
+    };
+    // 设置默认选中为自定义引导语
+    setSelectedGuidance({
+      id: 'custom-guidance',
+      title: t('创建专属引导语', 'Create Custom Guidance'),
+      description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
+      paragraphs: [],
+      content: <></>,
+      type: 'custom' as const
     });
 
     // ... [其他初始化代码]
@@ -1107,7 +1118,7 @@ export default function MeditationPage() {
               selectedGuidance={selectedGuidance}
               onGuidanceSelect={(guidance) => {
                 // 添加 type 属性以满足类型要求
-                handleGuidanceSelect({ ...guidance, type: 'guidance' });
+                handleGuidanceSelect({ ...guidance, type: 'preset', audioUrl: guidance.audioUrl || undefined });
               }}
               onShowFullText={handleShowGuidanceText}
               isDarkTheme={isDarkTheme}

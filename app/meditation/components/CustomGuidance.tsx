@@ -27,6 +27,16 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     const [userInput, setUserInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTestMode, setIsTestMode] = useState(false);
+    const [generateError, setGenerateError] = useState<string | null>(null);
+
+    const MAX_CHARS = 300;
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const input = e.target.value;
+        if (input.length <= MAX_CHARS) {
+            setUserInput(input);
+        }
+    };
 
     const generateGuidance = async () => {
         if (!userInput.trim() && !isTestMode) {
@@ -38,12 +48,25 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             return;
         }
 
+        if (userInput.length > MAX_CHARS) {
+            toast({
+                title: t("内容过长", "Content too long"),
+                description: t(
+                    `内容不能超过${MAX_CHARS}字`,
+                    `Content cannot exceed ${MAX_CHARS} characters`
+                ),
+                variant: "destructive",
+            });
+            return;
+        }
+
         setIsGenerating(true);
+        setGenerateError(null);
 
         try {
             let deepseekResponse;
 
-            // 测试模式：使用预设的引导语内容，无需调用DeepSeek API
+            // 测试模式：使用预设的引导语内容，无需调用API
             if (isTestMode) {
                 console.log("[引导语生成] 测试模式：使用预设引导语内容");
                 // 预设的引导语内容
@@ -110,8 +133,9 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             console.log("[引导语生成] 创建完成，准备添加到列表");
             onGuidanceCreated(newGuidance);
 
-            // 重置输入
+            // 重置输入和错误状态
             setUserInput('');
+            setGenerateError(null);
 
             if (audioError) {
                 toast({
@@ -132,22 +156,8 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             const error = e as Error;
             console.error("[引导语生成] 错误:", error);
 
-            // 显示更醒目的错误提示
-            toast({
-                title: t("⚠️ 生成失败", "⚠️ Generation Failed"),
-                description: (
-                    <div className="flex flex-col gap-2">
-                        <p className="font-medium text-red-600 dark:text-red-400">
-                            {t("服务器生成错误", "Server Generation Error")}
-                        </p>
-                        <p className="text-sm opacity-90">
-                            {error.message || t("未知错误，请稍后重试", "Unknown error, please try again later")}
-                        </p>
-                    </div>
-                ),
-                variant: "destructive",
-                duration: 5000, // 显示时间延长到5秒
-            });
+            // 设置错误状态
+            setGenerateError(error.message || t("未知错误，请稍后重试", "Unknown error, please try again later"));
         } finally {
             setIsGenerating(false);
         }
@@ -208,58 +218,82 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     };
 
     return (
-        <div className={`p-4 rounded-lg border ${isDarkTheme ? 'bg-indigo-950/30 border-indigo-800' : 'bg-blue-50 border-blue-200'
-            }`}>
-            {/* <h3 className={`text-lg font-medium mb-3 ${isDarkTheme ? 'text-indigo-200' : 'text-blue-800'
-                }`}>
-                {t("创建自定义引导语", "Create Custom Guidance")}
-            </h3> */}
+        <div className={`p-4 rounded-lg border ${isDarkTheme ? 'bg-indigo-950/30 border-indigo-800' : 'bg-blue-50 border-blue-200'}`}>
+            <div className="space-y-4">
+                {/* 测试模式开关 */}
+                {/* <div className="flex items-center justify-end space-x-2">
+                    <Switch
+                        id="test-mode"
+                        checked={isTestMode}
+                        onCheckedChange={setIsTestMode}
+                    />
+                    <Label htmlFor="test-mode" className={isDarkTheme ? 'text-indigo-300' : 'text-blue-600'}>
+                        {t("测试模式", "Test Mode")}
+                    </Label>
+                </div> */}
 
+                {/* 输入区域 */}
+                <div className="space-y-1">
+                    <Textarea
+                        value={userInput}
+                        onChange={handleInputChange}
+                        placeholder={t(
+                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过300字）...",
+                            "Describe your current concerns or feelings, and AI will generate personalized guidance (max 300 characters)..."
+                        )}
+                        className={`min-h-[120px] ${isDarkTheme ? 'bg-indigo-950/50 border-indigo-700 text-white placeholder:text-indigo-400' : 'bg-white border-blue-200 text-slate-800 placeholder:text-blue-400'}`}
+                    />
+                    <div className={`text-xs text-right ${userInput.length >= MAX_CHARS
+                        ? 'text-red-500 font-medium'
+                        : isDarkTheme
+                            ? 'text-indigo-400'
+                            : 'text-blue-600'
+                        }`}>
+                        {userInput.length}/{MAX_CHARS} {t("字", "characters")}
+                        {userInput.length >= MAX_CHARS && (
+                            <span className="ml-2">
+                                {t("已达到字数限制", "Character limit reached")}
+                            </span>
+                        )}
+                    </div>
+                </div>
 
-
-            <Textarea
-                placeholder={isTestMode ?
-                    t("测试模式：将使用预设文本", "Test mode: Will use preset text") :
-                    t("输入你的想法、感受或烦恼，我们将为你生成个性化的冥想引导语...", "Enter your thoughts, feelings, or concerns, and we'll generate a personalized meditation guidance for you...")}
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                rows={4}
-                className={`mb-3 ${isDarkTheme ? 'bg-indigo-900/50 border-indigo-700' : 'bg-white border-blue-300'} ${isTestMode ? 'opacity-50' : ''}`}
-                disabled={isTestMode}
-            />
-
-            {/* <div className="flex items-center space-x-2 mb-4">
-                <Switch
-                    id="test-mode"
-                    checked={isTestMode}
-                    onCheckedChange={setIsTestMode}
-                />
-                <Label htmlFor="test-mode" className={`text-sm ${isDarkTheme ? 'text-indigo-200' : 'text-blue-800'}`}>
-                    <FlaskConical className="h-4 w-4 inline-block mr-1" />
-                    {t("测试模式（使用预设文本，跳过DeepSeek API调用）", "Test mode (use preset text, skip DeepSeek API call)")}
-                </Label>
-            </div> */}
-
-            <Button
-                onClick={generateGuidance}
-                disabled={isGenerating}
-                className={`w-full ${isDarkTheme ? 'bg-indigo-700 hover:bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-            >
-                {isGenerating ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t("正在生成...", "Generating...")}
-                    </>
-                ) : (
-                    <>
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        {isTestMode ?
-                            t("生成测试引导语", "Generate Test Guidance") :
-                            t("生成引导语", "Generate Guidance")}
-                    </>
+                {/* 错误提示 */}
+                {generateError && (
+                    <div className={`p-3 rounded-md ${isDarkTheme ? 'bg-red-900/20 border border-red-800' : 'bg-red-50 border border-red-200'}`}>
+                        <p className={`text-sm font-medium ${isDarkTheme ? 'text-red-400' : 'text-red-600'}`}>
+                            ⚠️ {t("生成失败", "Generation Failed")}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDarkTheme ? 'text-red-300' : 'text-red-500'}`}>
+                            {generateError}
+                        </p>
+                    </div>
                 )}
-            </Button>
+
+                {/* 生成按钮 */}
+                <div className="flex justify-end">
+                    <Button
+                        onClick={generateGuidance}
+                        disabled={isGenerating || (!isTestMode && (userInput.length === 0 || userInput.length > MAX_CHARS))}
+                        className={`${isDarkTheme
+                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-indigo-900/50'
+                            : 'bg-blue-600 hover:bg-blue-500 text-white disabled:bg-blue-300'
+                            } transition-colors`}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {t("生成中...", "Generating...")}
+                            </>
+                        ) : (
+                            <>
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                {t("生成引导语", "Generate Guidance")}
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 } 

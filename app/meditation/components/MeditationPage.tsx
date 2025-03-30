@@ -1141,12 +1141,11 @@ export default function MeditationPage() {
           <DialogHeader>
             <DialogTitle>{t("选择引导语", "Choose Guidance")}</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[100vh] overflow-y-auto">
+          <div className="max-h-[calc(85vh-120px)] overflow-y-auto">
             <GuidanceSelector
               guidances={guidanceTexts}
               selectedGuidance={selectedGuidance}
               onGuidanceSelect={(guidance) => {
-                // 添加 type 属性以满足类型要求
                 handleGuidanceSelect({ ...guidance, type: 'preset', audioUrl: guidance.audioUrl || undefined });
               }}
               onShowFullText={handleShowGuidanceText}

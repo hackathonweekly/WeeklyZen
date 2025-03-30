@@ -137,7 +137,7 @@ export function GuidanceSelector({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-2 max-h-[240px] overflow-y-auto pr-2">
+      <div className="grid grid-cols-1 gap-2 max-h-[calc(65vh-80px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
         {/* 自定义引导语选项 */}
         <div className="space-y-2">
           <Button

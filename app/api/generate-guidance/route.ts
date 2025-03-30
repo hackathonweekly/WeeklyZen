@@ -155,12 +155,25 @@ export async function POST(request: Request) {
             const errorData = await response.json();
             console.error('[生成引导语] OpenAI API错误:', {
                 status: response.status,
-                error: errorData
+                error: errorData,
+                endpoint: apiEndpoint,
+                modelName: modelName
             });
+
+            let errorMessage = '网络连接不稳定，请稍后重试';
+            if (response.status === 401) {
+                errorMessage = 'API密钥无效或已过期';
+            } else if (response.status === 429) {
+                errorMessage = 'API调用次数已达上限，请稍后再试';
+            } else if (response.status === 500) {
+                errorMessage = '服务器内部错误，请检查API配置';
+            }
+
             return NextResponse.json(
                 {
-                    error: 'Failed to generate text from OpenAI API',
-                    message: '网络连接不稳定，请稍后重试'
+                    error: `Failed to generate text from OpenAI API: ${response.status}`,
+                    message: errorMessage,
+                    details: errorData
                 },
                 { status: response.status }
             );

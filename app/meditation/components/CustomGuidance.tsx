@@ -38,8 +38,6 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             return;
         }
 
-
-
         setIsGenerating(true);
 
         try {
@@ -59,13 +57,18 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
 
                 deepseekResponse = { paragraphs: testParagraphs };
             } else {
-                // 正常模式：调用DeepSeek API生成引导语
-                console.log("[引导语生成] 开始调用 DeepSeek API");
-                deepseekResponse = await generateTextFromDeepSeek(userInput);
-            }
+                // 正常模式：调用API生成引导语
+                console.log("[引导语生成] 开始调用 API");
+                const response = await generateTextFromDeepSeek(userInput);
 
-            if (!deepseekResponse || !deepseekResponse.paragraphs || deepseekResponse.paragraphs.length === 0) {
-                throw new Error("Failed to generate guidance text");
+                if (!response || !response.paragraphs || response.paragraphs.length === 0) {
+                    throw new Error(t(
+                        "服务器生成失败，请稍后重试",
+                        "Server generation failed, please try again later"
+                    ));
+                }
+
+                deepseekResponse = response;
             }
 
             console.log("[引导语生成] 成功获取引导语内容，段落数:", deepseekResponse.paragraphs.length);
@@ -84,7 +87,6 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
                 audioError = true;
                 audioErrorMessage = error.message || "Unknown error";
-                // 音频生成失败，但不影响引导语创建
             }
 
             // 创建引导语对象并回调
@@ -129,13 +131,22 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
         } catch (e) {
             const error = e as Error;
             console.error("[引导语生成] 错误:", error);
+
+            // 显示更醒目的错误提示
             toast({
-                title: t("生成失败", "Generation Failed"),
-                description: t(
-                    `生成引导语时出现错误: ${error.message || "未知错误"}`,
-                    `An error occurred: ${error.message || "Unknown error"}`
+                title: t("⚠️ 生成失败", "⚠️ Generation Failed"),
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <p className="font-medium text-red-600 dark:text-red-400">
+                            {t("服务器生成错误", "Server Generation Error")}
+                        </p>
+                        <p className="text-sm opacity-90">
+                            {error.message || t("未知错误，请稍后重试", "Unknown error, please try again later")}
+                        </p>
+                    </div>
                 ),
                 variant: "destructive",
+                duration: 5000, // 显示时间延长到5秒
             });
         } finally {
             setIsGenerating(false);

@@ -60,7 +60,7 @@ export function GuidanceSelector({
   isDarkTheme,
   t
 }: GuidanceSelectorProps) {
-  const [showCustom, setShowCustom] = useState(false);
+  const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
 
   // 创建无引导语和自定义引导语选项

@@ -24,7 +24,8 @@ import {
   Settings,
   Sun,
   Text,
-  X
+  X,
+  PencilIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -757,6 +758,24 @@ export default function MeditationPage() {
     }
   };
 
+  // 添加 setShowCustomGuidance 方法
+  const setShowCustomGuidance = useCallback((show: boolean) => {
+    if (show) {
+      // 设置选中的引导语为自定义引导语
+      setSelectedGuidance({
+        id: 'custom-guidance',
+        title: t('创建专属引导语', 'Create Custom Guidance'),
+        description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
+        paragraphs: [],
+        content: <></>,
+        type: 'custom' as const
+      });
+      // 打开引导语对话框
+      setShowGuidanceDialog(true);
+
+    }
+  }, [t]);
+
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
       {/* 顶部导航 - 响应式设计 */}
@@ -896,7 +915,7 @@ export default function MeditationPage() {
                 {t("引导语", "Guidance")}
               </Button>
 
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -910,7 +929,7 @@ export default function MeditationPage() {
               >
                 <Headphones size={18} className="mr-2" />
                 {t("冥想课程", "Courses")}
-              </Button>
+              </Button> */}
 
               {/* 移动端时长选择 */}
               <div className="space-y-2">
@@ -1027,18 +1046,13 @@ export default function MeditationPage() {
 
       {/* 选中引导语显示 */}
       <div className={`text-center px-4 py-2 ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'}`}>
-        {/* 顶部提示词 - 始终显示 */}
-        <div className="text-xs opacity-60 mb-1">
-          {t("分享你的困扰，AI 为你定制专属冥想引导", "Share your concerns, let AI create your personalized meditation guidance")}
-        </div>
-
         {selectedGuidance && selectedGuidance.id !== 'no-guidance' && (
           <>
             <div className="flex items-center justify-center flex-wrap">
               <Volume2 size={16} className="mr-2" />
               <span className="font-semibold">
                 {selectedGuidance.id.startsWith('custom-')
-                  ? t("自定义创建引导语", "Custom Guidance")
+                  ? t("自定义引导语", "Custom Guidance")
                   : selectedGuidance.title}
               </span>
             </div>
@@ -1050,6 +1064,14 @@ export default function MeditationPage() {
             </div>
           </>
         )}
+        {/* 顶部提示词 - 始终显示 */}
+        <div
+          className="text-xs opacity-60 my-4 hover:opacity-100 transition-all cursor-pointer flex items-center justify-center gap-2"
+          onClick={() => setShowCustomGuidance(true)}
+        >
+          <PencilIcon className="w-3 h-3" />
+          {t("分享你的困扰，AI 为你定制专属冥想引导", "Share your concerns, let AI create your personalized meditation guidance")}
+        </div>
       </div>
 
       {/* 主要内容 - 响应式布局优化 */}
@@ -1119,7 +1141,7 @@ export default function MeditationPage() {
           <DialogHeader>
             <DialogTitle>{t("选择引导语", "Choose Guidance")}</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="max-h-[100vh] overflow-y-auto">
             <GuidanceSelector
               guidances={guidanceTexts}
               selectedGuidance={selectedGuidance}
@@ -1239,7 +1261,7 @@ export default function MeditationPage() {
       </Dialog>
 
       {/* 冥想课程选择对话框 - 优化移动端显示 */}
-      <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
+      {/* <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
         <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
           <DialogHeader>
             <DialogTitle>{t("选择冥想课程", "Choose Meditation Course")}</DialogTitle>
@@ -1254,7 +1276,7 @@ export default function MeditationPage() {
             />
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* 音频元素 */}
       <audio ref={audioRef} loop>

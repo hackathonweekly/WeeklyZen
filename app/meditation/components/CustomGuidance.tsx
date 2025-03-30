@@ -25,7 +25,6 @@ interface CustomGuidanceProps {
 
 export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuidanceProps) {
     const [userInput, setUserInput] = useState('');
-    const [title, setTitle] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTestMode, setIsTestMode] = useState(false);
 
@@ -39,14 +38,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             return;
         }
 
-        if (!title.trim()) {
-            toast({
-                title: t("请输入标题", "Please enter a title"),
-                description: t("请为你的自定义引导语添加一个标题", "Please add a title for your custom guidance"),
-                variant: "destructive",
-            });
-            return;
-        }
+
 
         setIsGenerating(true);
 
@@ -98,7 +90,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             // 创建引导语对象并回调
             const newGuidance = {
                 id: uuidv4(),
-                title: title,
+                title: t("自定义引导语", "Custom Guidance"),
                 description: isTestMode
                     ? "测试模式生成的引导语"
                     : userInput.substring(0, 100) + (userInput.length > 100 ? '...' : ''),
@@ -118,7 +110,6 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
 
             // 重置输入
             setUserInput('');
-            setTitle('');
 
             if (audioError) {
                 toast({
@@ -208,18 +199,12 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     return (
         <div className={`p-4 rounded-lg border ${isDarkTheme ? 'bg-indigo-950/30 border-indigo-800' : 'bg-blue-50 border-blue-200'
             }`}>
-            <h3 className={`text-lg font-medium mb-3 ${isDarkTheme ? 'text-indigo-200' : 'text-blue-800'
+            {/* <h3 className={`text-lg font-medium mb-3 ${isDarkTheme ? 'text-indigo-200' : 'text-blue-800'
                 }`}>
                 {t("创建自定义引导语", "Create Custom Guidance")}
-            </h3>
+            </h3> */}
 
-            <Input
-                placeholder={t("输入标题...", "Enter title...")}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className={`mb-3 ${isDarkTheme ? 'bg-indigo-900/50 border-indigo-700' : 'bg-white border-blue-300'
-                    }`}
-            />
+
 
             <Textarea
                 placeholder={isTestMode ?

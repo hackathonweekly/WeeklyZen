@@ -235,9 +235,12 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 {/* 输入区域 */}
                 <div className="space-y-1">
                     <Textarea
-                        placeholder="请输入您想要的引导语内容（最多800字），例如：我最近工作压力很大，经常失眠，希望通过冥想来缓解压力，改善睡眠质量。"
                         value={userInput}
                         onChange={handleInputChange}
+                        placeholder={t(
+                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过800字）...",
+                            "Describe your current concerns or feelings, and AI will generate personalized guidance (max 800 characters)..."
+                        )}
                         className={`min-h-[120px] ${isDarkTheme ? 'bg-indigo-950/50 border-indigo-700 text-white placeholder:text-indigo-400' : 'bg-white border-blue-200 text-slate-800 placeholder:text-blue-400'}`}
                     />
                     <div className={`text-xs text-right ${userInput.length >= MAX_CHARS

@@ -97,6 +97,13 @@ export function GuidanceSelector({
       type: guidance.id === 'custom-guidance' ? 'custom' : guidance.type
     };
 
+
+    // 如果是预设引导语且在音频映射表中存在，添加音频URL
+    if (guidance.id in guidanceAudioMap && !guidance.audioUrl) {
+      updatedGuidance.audioUrl = guidanceAudioMap[guidance.id];
+      console.log('[GuidanceSelector] 添加音频URL:', updatedGuidance.audioUrl);
+    }
+
     onGuidanceSelect(updatedGuidance);
   };
 

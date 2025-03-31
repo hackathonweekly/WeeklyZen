@@ -6,11 +6,13 @@ import path from 'path';
 
 // 定义引导语类型
 export interface GuidanceType {
+  type: 'preset' | 'custom' | 'none';
   content: ReactNode;
   id: string;
   title: string;
   description: string;
   paragraphs: string[];
+  audioUrl?: string;
 }
 
 // 引导语基本信息
@@ -19,16 +21,19 @@ const guidanceInfo = [
     id: 'basic',
     title: '基础引导',
     description: '适合初学者的简单引导',
+    type: 'preset' as const
   },
   {
     id: 'breath',
     title: '呼吸观察',
     description: '专注于呼吸的冥想练习',
+    type: 'preset' as const
   },
   {
     id: 'body',
     title: '身体扫描',
     description: '从头到脚感受身体的冥想',
+    type: 'preset' as const
   }
 ];
 
@@ -51,17 +56,18 @@ export function useGuidanceTexts() {
               throw new Error(`Failed to load ${info.id}.txt: ${response.status}`);
             }
             const text = await response.text();
-            
+
             // 按段落分割文本
             const paragraphs = text
               .split('\n')
               .filter(line => line.trim() !== '')
               .map(line => line.trim());
-            
+
             loadedGuidances.push({
               ...info,
               paragraphs,
-              content: paragraphs.join('\n')
+              content: paragraphs.join('\n'),
+              type: 'preset' as const
             });
           } catch (err) {
             console.error(`Error loading ${info.id}.txt:`, err);
@@ -69,14 +75,15 @@ export function useGuidanceTexts() {
             loadedGuidances.push({
               ...info,
               paragraphs: [`无法加载 ${info.id} 引导语内容`],
-              content: `无法加载 ${info.id} 引导语内容`
+              content: `无法加载 ${info.id} 引导语内容`,
+              type: 'preset' as const
             });
           }
         });
 
         // 等待所有文件加载完成
         await Promise.all(promises);
-        
+
         setGuidanceTexts(loadedGuidances);
         setLoading(false);
       } catch (err) {

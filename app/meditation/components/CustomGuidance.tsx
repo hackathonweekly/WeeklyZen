@@ -29,7 +29,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     const [isTestMode, setIsTestMode] = useState(false);
     const [generateError, setGenerateError] = useState<string | null>(null);
 
-    const MAX_CHARS = 300;
+    const MAX_CHARS = 800;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const input = e.target.value;
@@ -238,21 +238,28 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                         value={userInput}
                         onChange={handleInputChange}
                         placeholder={t(
-                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过300字）...",
-                            "Describe your current concerns or feelings, and AI will generate personalized guidance (max 300 characters)..."
+                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（建议300-800字）...",
+                            "Describe your current concerns or feelings, and AI will generate personalized guidance (suggested 300-800 characters)..."
                         )}
                         className={`min-h-[120px] ${isDarkTheme ? 'bg-indigo-950/50 border-indigo-700 text-white placeholder:text-indigo-400' : 'bg-white border-blue-200 text-slate-800 placeholder:text-blue-400'}`}
                     />
                     <div className={`text-xs text-right ${userInput.length >= MAX_CHARS
-                        ? 'text-red-500 font-medium'
-                        : isDarkTheme
-                            ? 'text-indigo-400'
-                            : 'text-blue-600'
+                            ? 'text-red-500 font-medium'
+                            : userInput.length < 50
+                                ? isDarkTheme ? 'text-amber-400' : 'text-amber-600'
+                                : isDarkTheme
+                                    ? 'text-indigo-400'
+                                    : 'text-blue-600'
                         }`}>
                         {userInput.length}/{MAX_CHARS} {t("字", "characters")}
                         {userInput.length >= MAX_CHARS && (
                             <span className="ml-2">
                                 {t("已达到字数限制", "Character limit reached")}
+                            </span>
+                        )}
+                        {userInput.length > 0 && userInput.length < 50 && (
+                            <span className="ml-2">
+                                {t("内容过短，建议详细描述您的情况", "Content too short, please provide more details")}
                             </span>
                         )}
                     </div>

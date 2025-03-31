@@ -29,7 +29,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
     const [isTestMode, setIsTestMode] = useState(false);
     const [generateError, setGenerateError] = useState<string | null>(null);
 
-    const MAX_CHARS = 800;
+    const MAX_CHARS = 300;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const input = e.target.value;

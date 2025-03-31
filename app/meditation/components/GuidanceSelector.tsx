@@ -91,10 +91,17 @@ export function GuidanceSelector({
       guidanceAudio.currentTime = 0;
     }
 
-    // 更新选中的引导语
+    // 检查是否存在对应的音频资源
+    let audioUrl = guidance.audioUrl;
+    if (!audioUrl && guidanceAudioMap[guidance.id]) {
+      audioUrl = guidanceAudioMap[guidance.id];
+    }
+
+    // 更新选中的引导语，确保包含正确的音频URL
     const updatedGuidance = {
       ...guidance,
-      type: guidance.id === 'custom-guidance' ? 'custom' : guidance.type
+      type: guidance.id === 'custom-guidance' ? 'custom' : guidance.type,
+      audioUrl: audioUrl
     };
 
     onGuidanceSelect(updatedGuidance);

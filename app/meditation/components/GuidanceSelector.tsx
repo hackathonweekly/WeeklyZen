@@ -60,7 +60,7 @@ export function GuidanceSelector({
   isDarkTheme,
   t
 }: GuidanceSelectorProps) {
-  const [showCustom, setShowCustom] = useState(false);
+  const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
 
   // 创建无引导语和自定义引导语选项
@@ -137,7 +137,7 @@ export function GuidanceSelector({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-2 max-h-[240px] overflow-y-auto pr-2">
+      <div className="grid grid-cols-1 gap-2 max-h-[calc(65vh-80px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
         {/* 自定义引导语选项 */}
         <div className="space-y-2">
           <Button

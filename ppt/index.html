@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周周冥想 - WeeklyZen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        #sidebar {
+            transition: transform 0.3s ease;
+        }
+        #sidebar.hidden {
+            transform: translateX(-100%);
+        }
+        #slideFrame {
+            transition: margin-left 0.3s ease;
+        }
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            margin: 0 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .nav-dot.active {
+            background: white;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <!-- 侧边栏 -->
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 p-4 z-50">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-xl font-bold">目录</h2>
+            <button id="toggleSidebar" class="text-white hover:text-gray-300">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="space-y-2">
+            <a href="intro.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="0">1. 项目介绍</a>
+            <a href="features.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="1">2. 核心功能</a>
+            <a href="ai.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="2">3. AI 创新</a>
+            <a href="demo.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="3">4. 产品演示</a>
+        </nav>
+    </div>
+
+    <!-- 主内容区 -->
+    <div id="mainContent" class="relative h-screen">
+        <!-- 顶部控制栏 -->
+        <div class="fixed top-4 left-4 z-50 flex items-center space-x-4">
+            <button id="menuBtn" class="text-white hover:text-gray-300">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <button id="fullscreenBtn" class="text-white hover:text-gray-300">
+                <i class="fas fa-expand text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 幻灯片框架 -->
+        <iframe id="slideFrame" src="intro.html" class="w-full h-full border-0"></iframe>
+
+        <!-- 底部导航指示器 -->
+        <div class="fixed bottom-4 right-4 flex items-center bg-black bg-opacity-50 px-4 py-2 rounded-full">
+            <div id="navDots" class="flex space-x-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const slides = ['intro.html', 'features.html', 'ai.html', 'demo.html'];
+        let currentSlide = 0;
+
+        // 初始化导航点
+        const navDots = document.getElementById('navDots');
+        slides.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.className = `nav-dot ${index === 0 ? 'active' : ''}`;
+            dot.onclick = () => goToSlide(index);
+            navDots.appendChild(dot);
+        });
+
+        // 切换幻灯片
+        function goToSlide(index) {
+            if (index >= 0 && index < slides.length) {
+                currentSlide = index;
+                document.getElementById('slideFrame').src = slides[index];
+                updateNavDots();
+            }
+        }
+
+        // 更新导航点状态
+        function updateNavDots() {
+            document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') goToSlide(currentSlide - 1);
+            if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
+        });
+
+        // 侧边栏切换
+        document.getElementById('menuBtn').onclick = () => {
+            document.getElementById('sidebar').classList.remove('hidden');
+        };
+
+        document.getElementById('toggleSidebar').onclick = () => {
+            document.getElementById('sidebar').classList.add('hidden');
+        };
+
+        // 全屏切换
+        document.getElementById('fullscreenBtn').onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // 链接点击处理
+        document.querySelectorAll('.slide-link').forEach(link => {
+            link.onclick = (e) => {
+                e.preventDefault();
+                const index = parseInt(link.dataset.index);
+                goToSlide(index);
+                document.getElementById('sidebar').classList.add('hidden');
+            };
+        });
+    </script>
+</body>
+</html> 

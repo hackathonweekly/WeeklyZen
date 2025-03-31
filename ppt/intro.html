@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目介绍 - WeeklyZen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 1s ease forwards;
+        }
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white h-screen flex items-center justify-center p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-2 gap-12 items-center">
+            <!-- 左侧内容 -->
+            <div class="space-y-8">
+                <div class="animate-fade-in">
+                    <h1 class="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                        周周冥想
+                    </h1>
+                    <p class="text-2xl text-gray-300">WeeklyZen.Club</p>
+                </div>
+                
+                <div class="space-y-4 animate-fade-in delay-1">
+                    <h2 class="text-2xl font-semibold text-blue-400">我们的愿景</h2>
+                    <p class="text-lg text-gray-300">
+                        为创客和开发者提供一个简单、可持续的冥想空间，通过AI驱动的个性化引导，
+                        帮助大家在创新与协作中找到内心的平衡与力量。
+                    </p>
+                </div>
+
+                <div class="space-y-4 animate-fade-in delay-2">
+                    <h2 class="text-2xl font-semibold text-purple-400">核心价值</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                            <i class="fas fa-heart text-pink-500 mb-2"></i>
+                            <h3 class="font-semibold">简单·纯粹</h3>
+                            <p class="text-sm text-gray-400">专注于冥想本质</p>
+                        </div>
+                        <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                            <i class="fas fa-users text-blue-500 mb-2"></i>
+                            <h3 class="font-semibold">互助·可持续</h3>
+                            <p class="text-sm text-gray-400">共同成长与进步</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧内容 -->
+            <div class="space-y-6 animate-fade-in delay-3">
+                <div class="bg-gray-800 bg-opacity-30 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-2xl font-semibold mb-4 text-green-400">三无承诺</h2>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>无收费 - 完全免费的冥想服务</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>无宗教 - 纯粹的冥想练习</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>无干扰 - 专注于冥想相关内容</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <img src="../public/wechat_qrcode.jpg" alt="微信公众号二维码" class="mx-auto w-32 rounded-lg shadow-lg">
+                    <p class="mt-2 text-gray-400">扫码关注我们</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

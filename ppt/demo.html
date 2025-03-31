@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品演示 - WeeklyZen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes breathe {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        .breathe {
+            animation: breathe 4s ease-in-out infinite;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .slide-in {
+            animation: slideIn 0.8s ease forwards;
+            opacity: 0;
+        }
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white h-screen flex items-center justify-center p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                产品演示
+            </h1>
+            <p class="text-gray-400 mt-4">
+                体验智能化的冥想之旅
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-12">
+            <!-- 左侧：产品截图 -->
+            <div class="space-y-6">
+                <!-- 主界面预览 -->
+                <div class="relative bg-gray-800 bg-opacity-30 p-4 rounded-xl border border-gray-700 slide-in">
+                    <img src="../image.png" alt="主界面预览" class="rounded-lg w-full shadow-lg">
+                    <div class="absolute bottom-4 right-4 bg-black bg-opacity-75 px-4 py-2 rounded-full text-sm">
+                        主页面
+                    </div>
+                </div>
+
+                <!-- 呼吸动画演示 -->
+                <div class="relative h-48 bg-gray-800 bg-opacity-30 rounded-xl border border-gray-700 overflow-hidden slide-in delay-1">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-24 h-24 bg-blue-500 bg-opacity-20 rounded-full breathe"></div>
+                        <div class="absolute text-center">
+                            <p class="text-lg font-semibold">呼吸动画</p>
+                            <p class="text-sm text-gray-400">平静身心</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：功能演示 -->
+            <div class="space-y-6 slide-in delay-2">
+                <!-- 冥想引导演示 -->
+                <div class="bg-gray-800 bg-opacity-30 p-6 rounded-xl border border-gray-700">
+                    <h3 class="text-xl font-semibold mb-4">智能冥想引导</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-900 bg-opacity-50 p-4 rounded-lg">
+                            <p class="text-gray-400 mb-2">用户输入</p>
+                            <p class="text-gray-300">"最近工作压力很大，需要放松..."</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-20 p-4 rounded-lg">
+                            <p class="text-gray-400 mb-2">AI 回应</p>
+                            <p class="text-gray-300">"让我们从深呼吸开始，感受此刻的平静..."</p>
+                        </div>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 技术亮点 -->
+                <div class="bg-gray-800 bg-opacity-30 p-6 rounded-xl border border-gray-700 slide-in delay-3">
+                    <h3 class="text-xl font-semibold mb-4">技术亮点</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-900 bg-opacity-50 p-4 rounded-lg text-center">
+                            <i class="fas fa-tachometer-alt text-blue-400 text-2xl mb-2"></i>
+                            <p class="font-semibold">实时响应</p>
+                            <p class="text-sm text-gray-400">毫秒级语音合成</p>
+                        </div>
+                        <div class="bg-gray-900 bg-opacity-50 p-4 rounded-lg text-center">
+                            <i class="fas fa-shield-alt text-green-400 text-2xl mb-2"></i>
+                            <p class="font-semibold">安全可靠</p>
+                            <p class="text-sm text-gray-400">数据加密存储</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 开始体验按钮 -->
+                <div class="text-center">
+                    <a href="https://weeklyzen.club" target="_blank" class="inline-block bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
+                        立即体验
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

@@ -239,7 +239,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                         onChange={handleInputChange}
                         placeholder={t(
                             "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过300字）...",
-                            "Describe your current concerns or feelings, and AI will generate personalized guidance (max 800 characters)..."
+                            "Describe your current concerns or feelings, and AI will generate personalized guidance (max 300 characters)..."
                         )}
                         className={`min-h-[120px] ${isDarkTheme ? 'bg-indigo-950/50 border-indigo-700 text-white placeholder:text-indigo-400' : 'bg-white border-blue-200 text-slate-800 placeholder:text-blue-400'}`}
                     />

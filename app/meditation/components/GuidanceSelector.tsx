@@ -13,7 +13,6 @@ interface GuidanceType {
   description: string;
   paragraphs: string[];
   audioUrl?: string | null;
-  type?: 'preset' | 'custom' | 'none';
 }
 
 interface GuidanceSelectorProps {
@@ -23,6 +22,8 @@ interface GuidanceSelectorProps {
   onShowFullText: () => void;
   isDarkTheme: boolean;
   t: (zh: string, en: string) => string;
+  onCloseDialog?: () => void;
+  onPlay?: () => void;
 }
 
 // 创建"无引导语"选项
@@ -32,7 +33,6 @@ const createNoGuidanceOption = (t: (zh: string, en: string) => string): Guidance
   description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
   paragraphs: [],
   content: <></>,
-  type: 'none'
 });
 
 // 创建"自定义引导语"选项
@@ -42,7 +42,6 @@ const createCustomGuidanceOption = (t: (zh: string, en: string) => string): Guid
   description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
   paragraphs: [],
   content: <></>,
-  type: 'custom'
 });
 
 // 音频资源映射
@@ -50,6 +49,7 @@ const guidanceAudioMap: Record<string, string> = {
   'basic': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/meditation.mp3',
   'breath': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/breathtrain.mp3',
   'body': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/bodyscan.mp3',
+  'custom-guidance': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
 };
 
 export function GuidanceSelector({
@@ -58,7 +58,9 @@ export function GuidanceSelector({
   onGuidanceSelect,
   onShowFullText,
   isDarkTheme,
-  t
+  t,
+  onCloseDialog,
+  onPlay
 }: GuidanceSelectorProps) {
   const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
@@ -82,7 +84,6 @@ export function GuidanceSelector({
     console.log('[GuidanceSelector] 选择引导语:', {
       id: guidance.id,
       title: guidance.title,
-      type: guidance.type
     });
 
     // 停止当前播放的音频
@@ -100,7 +101,6 @@ export function GuidanceSelector({
     // 更新选中的引导语，确保包含正确的音频URL
     const updatedGuidance = {
       ...guidance,
-      type: guidance.id === 'custom-guidance' ? 'custom' : guidance.type,
       audioUrl: audioUrl
     };
 
@@ -108,7 +108,13 @@ export function GuidanceSelector({
   };
 
   const handleGuidanceCreated = (newGuidance: GuidanceType) => {
-    handleGuidanceSelect(newGuidance);
+    // 确保自定义引导语的ID始终为'custom-guidance'
+    const updatedGuidance = {
+      ...newGuidance,
+      id: 'custom-guidance' // 强制设置ID为'custom-guidance'
+    };
+
+    handleGuidanceSelect(updatedGuidance);
     setShowCustom(false);
   };
 
@@ -193,6 +199,11 @@ export function GuidanceSelector({
                 onGuidanceCreated={handleGuidanceCreated}
                 isDarkTheme={isDarkTheme}
                 t={t}
+                onGenerateComplete={() => {
+                  // 生成完成后关闭对话框并播放
+                  if (onCloseDialog) onCloseDialog();
+                  if (onPlay) onPlay();
+                }}
               />
             </div>
           )}

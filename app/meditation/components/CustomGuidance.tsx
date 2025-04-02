@@ -18,12 +18,14 @@ interface CustomGuidanceProps {
         paragraphs: string[];
         content: ReactNode;
         audioUrl?: string;
+        customAudioUrl?: string;
     }) => void;
     isDarkTheme: boolean;
     t: (zh: string, en: string) => string;
+    onGenerateComplete?: () => void;
 }
 
-export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuidanceProps) {
+export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateComplete }: CustomGuidanceProps) {
     const [userInput, setUserInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTestMode, setIsTestMode] = useState(false);
@@ -48,7 +50,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
             return;
         }
 
-        if (userInput.length > MAX_CHARS) {
+        if (userInput.length > MAX_CHARS && !isTestMode) {
             toast({
                 title: t("内容过长", "Content too long"),
                 description: t(
@@ -58,6 +60,12 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                 variant: "destructive",
             });
             return;
+        }
+
+        // 如果提供了onGenerateComplete回调，立即调用它，不等待 API 响应
+        if (onGenerateComplete) {
+            console.log("[引导语生成] 立即调用完成回调");
+            onGenerateComplete();
         }
 
         setIsGenerating(true);
@@ -102,9 +110,16 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
 
             // 尝试调用豆包 TTS API 生成音频
             try {
-                console.log("[引导语生成] 开始调用豆包 TTS API" + (isTestMode ? " (测试模式)" : ""));
-                audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'), isTestMode);
-                console.log("[引导语生成] 豆包 TTS API 调用成功，获取到音频URL");
+                if (isTestMode) {
+                    // 测试模式使用预设的音频URL
+                    console.log("[引导语生成] 测试模式：使用预设音频URL");
+                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/bodyscan.mp3";
+                } else {
+                    // 正常模式调用API生成音频
+                    console.log("[引导语生成] 开始调用豆包 TTS API");
+                    audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'), isTestMode);
+                }
+                console.log("[引导语生成] 获取到音频URL:", audioUrl);
             } catch (e) {
                 const error = e as Error;
                 console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
@@ -232,13 +247,21 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                     </Label>
                 </div> */}
 
+                {/* 测试模式说明 */}
+                {isTestMode && (
+                    <div className={`p-2 text-xs rounded-md ${isDarkTheme ? 'bg-indigo-900/30 text-indigo-300 border border-indigo-800/50' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>
+                        {t("测试模式已开启：将使用预设内容，无需调用API。可直接点击生成按钮测试流程。",
+                            "Test mode enabled: Predefined content will be used without API calls. Click generate to test the workflow.")}
+                    </div>
+                )}
+
                 {/* 输入区域 */}
                 <div className="space-y-1">
                     <Textarea
                         value={userInput}
                         onChange={handleInputChange}
                         placeholder={t(
-                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过800字）...",
+                            "请描述你当前的困扰或感受，AI将为你生成个性化的引导语（不超过300字）...",
                             "Describe your current concerns or feelings, and AI will generate personalized guidance (max 800 characters)..."
                         )}
                         className={`min-h-[120px] ${isDarkTheme ? 'bg-indigo-950/50 border-indigo-700 text-white placeholder:text-indigo-400' : 'bg-white border-blue-200 text-slate-800 placeholder:text-blue-400'}`}
@@ -288,7 +311,9 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t }: CustomGuid
                         ) : (
                             <>
                                 <Wand2 className="mr-2 h-4 w-4" />
-                                {t("生成引导语", "Generate Guidance")}
+                                {isTestMode
+                                    ? t("测试生成", "Test Generate")
+                                    : t("生成引导语", "Generate Guidance")}
                             </>
                         )}
                     </Button>

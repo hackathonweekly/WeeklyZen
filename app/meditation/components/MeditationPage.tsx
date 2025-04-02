@@ -47,7 +47,6 @@ import { useTheme } from 'next-themes';
 import { useGuidanceTexts } from '@/app/guidance';
 import type { GuidanceType } from '@/app/guidance';
 import { AudioManager } from '../utils/AudioUtils';
-import { MeditationTimer } from './MeditationTimer';
 import { SoundSelector } from './SoundSelector';
 import { GuidanceSelector } from './GuidanceSelector';
 import { CourseSelector } from './CourseSelector';
@@ -149,12 +148,12 @@ export default function MeditationPage() {
   // 引导语相关
   const { guidanceTexts } = useGuidanceTexts();
   const [selectedGuidance, setSelectedGuidance] = useState<GuidanceType | null>({
-    id: 'no-guidance',
-    title: t('无引导语', 'No Guidance'),
-    description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
+    id: 'custom-guidance',
+    title: t('创建专属引导语', 'Create Custom Guidance'),
+    description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
     paragraphs: [],
     content: <></>,
-    type: 'none' // 添加缺失的 type 属性
+    audioUrl: 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
   });
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
 
@@ -287,16 +286,8 @@ export default function MeditationPage() {
 
   // 处理引导语选择
   const handleGuidanceSelect = (guidance: GuidanceType) => {
-    // 如果有正在播放的引导语音频，先停止
-    if (guidanceAudio) {
-      console.log('[调试] 停止之前的引导语音频');
-      guidanceAudio.pause();
-      guidanceAudio.src = '';
-      setGuidanceAudio(null);
-    }
-
     // 设置选中的引导语
-    console.log('[调试] 选中引导语:', guidance.id, guidance.title, guidance.type);
+    console.log('[调试] 选中引导语:', guidance.id, guidance.title);
     setSelectedGuidance(guidance);
     setShowGuidanceDialog(false);
 
@@ -304,10 +295,13 @@ export default function MeditationPage() {
     console.log('[调试] 重置冥想计时和音频');
     resetMeditation();
 
+    // 根据引导语类型选择正确的音频URL
+    let audioUrl = guidance.audioUrl;
+
     // 如果引导语有音频URL，创建新的音频元素
-    if (guidance.audioUrl) {
-      console.log('[调试] 引导语有音频URL，创建音频元素:', guidance.audioUrl);
-      const audio = new Audio(guidance.audioUrl);
+    if (audioUrl) {
+      console.log('[调试] 引导语有音频URL，创建音频元素:', audioUrl);
+      const audio = new Audio(audioUrl);
       audio.volume = isMuted ? 0 : volume / 100;
       console.log('[调试] 设置引导语音频音量:', isMuted ? 0 : volume / 100);
 
@@ -485,22 +479,51 @@ export default function MeditationPage() {
         // 播放引导语音频
         if (guidanceAudio) {
           console.log('[调试] 播放引导语音频...');
-          console.log('[调试] 引导语音频当前时间:', guidanceAudio.currentTime);
-          // 不重置播放位置，继续播放当前位置
+
+          // 选择合适的音频URL
+          const audioUrl = guidanceAudio.src;
+
+          console.log(`[调试] 使用引导语音频URL: ${audioUrl}`);
+
+          // 播放音频
           guidanceAudio.play().then(() => {
             console.log('[调试] 引导语音频播放成功!');
           }).catch(error => {
             console.error('[调试] 播放引导语音频失败:', error);
             toast.error('播放引导语音频失败，请重试');
           });
+
+          // 当start.mp3播放完成后，播放自定义音频
+          guidanceAudio.onended = () => {
+            // 检查是否为自定义引导语且有customAudioUrl
+            if (selectedGuidance?.id === 'custom-guidance' && (selectedGuidance as any).customAudioUrl) {
+              console.log('[调试] start.mp3播放完成，准备播放自定义引导语音频:', (selectedGuidance as any).customAudioUrl);
+
+              try {
+                // 创建新的音频对象来播放自定义引导语
+                const customAudio = new Audio((selectedGuidance as any).customAudioUrl);
+                customAudio.volume = isMuted ? 0 : volume / 100;
+
+                // 更新引导语音频引用
+                setGuidanceAudio(customAudio);
+
+                // 播放自定义引导语音频
+                customAudio.play().then(() => {
+                  console.log('[调试] 自定义引导语音频播放成功!');
+                }).catch(error => {
+                  console.error('[调试] 播放自定义引导语音频失败:', error);
+                  toast.error('播放自定义引导语音频失败，请重试');
+                });
+              } catch (error) {
+                console.error('[调试] 创建自定义引导语音频对象失败:', error);
+                toast.error('播放自定义引导语音频失败，请重试');
+              }
+            } else {
+              console.log('[调试] 音频播放完成，无需后续操作');
+            }
+          };
         } else {
-          console.log('[调试] 没有引导语音频可播放');
-          if (selectedGuidance) {
-            console.log('[调试] 选中的引导语:', selectedGuidance.id, selectedGuidance.title);
-            console.log('[调试] 引导语音频URL:', selectedGuidance.audioUrl || '无');
-          } else {
-            console.log('[调试] 未选择引导语');
-          }
+          console.log('[调试] 没有引导语音频对象');
         }
       }
     } else {
@@ -732,7 +755,6 @@ export default function MeditationPage() {
       description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
       paragraphs: [],
       content: <></>,
-      type: 'custom' as const
     });
 
     // ... [其他初始化代码]
@@ -768,7 +790,6 @@ export default function MeditationPage() {
         description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
         paragraphs: [],
         content: <></>,
-        type: 'custom' as const
       });
       // 打开引导语对话框
       setShowGuidanceDialog(true);
@@ -1057,10 +1078,7 @@ export default function MeditationPage() {
               </span>
             </div>
             <div className="text-xs mt-1 opacity-80 px-2">
-              {selectedGuidance.type === 'custom'
-                ? t("来源：自定义", "Source: Custom") + " | " + t("不低于7分钟", "At least 7 minutes")
-                : t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")
-              }
+              {t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")}
             </div>
           </>
         )}
@@ -1146,11 +1164,13 @@ export default function MeditationPage() {
               guidances={guidanceTexts}
               selectedGuidance={selectedGuidance}
               onGuidanceSelect={(guidance) => {
-                handleGuidanceSelect({ ...guidance, type: 'preset', audioUrl: guidance.audioUrl || undefined });
+                handleGuidanceSelect({ ...guidance, audioUrl: guidance.audioUrl || undefined });
               }}
               onShowFullText={handleShowGuidanceText}
               isDarkTheme={isDarkTheme}
               t={t}
+              onCloseDialog={() => setShowGuidanceDialog(false)}
+              onPlay={togglePlayPause}
             />
           </div>
         </DialogContent>

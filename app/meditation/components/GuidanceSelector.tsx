@@ -92,10 +92,28 @@ export function GuidanceSelector({
       guidanceAudio.currentTime = 0;
     }
 
+    // 如果是"无引导语"选项，不设置音频URL
+    if (guidance.id === 'no-guidance') {
+      console.log('[GuidanceSelector] 选择无引导语，不设置音频');
+      const updatedGuidance = {
+        ...guidance,
+        audioUrl: null
+      };
+      onGuidanceSelect(updatedGuidance);
+      return;
+    }
+
     // 检查是否存在对应的音频资源
     let audioUrl = guidance.audioUrl;
     if (!audioUrl && guidanceAudioMap[guidance.id]) {
       audioUrl = guidanceAudioMap[guidance.id];
+      console.log('[GuidanceSelector] 使用预设音频URL:', audioUrl);
+    }
+
+    // 如果是自定义引导语,强制使用 start.mp3
+    if (guidance.id === 'custom-guidance') {
+      audioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3';
+      console.log('[GuidanceSelector] 使用自定义引导语音频:', audioUrl);
     }
 
     // 更新选中的引导语，确保包含正确的音频URL

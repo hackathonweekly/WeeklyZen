@@ -155,7 +155,13 @@ export default function MeditationPage() {
     content: <></>,
     audioUrl: 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
   });
-  const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
+
+  // 初始化引导语音频对象
+  const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(() => {
+    const audio = new Audio('https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3');
+    audio.volume = 0.25; // 默认音量 25%
+    return audio;
+  });
 
   // 对话框状态
   const [showSoundDialog, setShowSoundDialog] = useState(false);
@@ -445,101 +451,42 @@ export default function MeditationPage() {
 
     // 如果开始播放
     if (newPlayingState) {
-      // 根据选择的内容播放对应的音频
-      if (selectedCourse && courseAudio) {
-        console.log('[调试] 播放课程音频');
-        // 播放课程音频
-        courseAudio.play().catch(error => {
-          console.error('[调试] 播放课程音频失败:', error);
-          toast.error('播放课程音频失败，请重试');
+      // 只有在不是"无引导语"模式下才播放引导语音频
+      if (guidanceAudio && selectedGuidance?.id !== 'no-guidance') {
+        console.log('[调试] 播放引导语音频...');
+        guidanceAudio.volume = isMuted ? 0 : volume / 100;
+
+        guidanceAudio.play().then(() => {
+          console.log('[调试] 引导语音频播放成功!');
+        }).catch(error => {
+          console.error('[调试] 播放引导语音频失败:', error);
+          toast.error('播放引导语音频失败，请重试');
         });
-      } else {
-        // 播放背景音效
-        if (selectedSound && audioRef.current) {
-          console.log('[调试] 播放背景音效:', selectedSound.name);
-          // 设置音频源（如果尚未设置）
-          if (!audioRef.current.src || !audioRef.current.src.includes(selectedSound.id)) {
-            console.log('[调试] 设置背景音效源:', selectedSound.audioUrl);
-            audioRef.current.src = selectedSound.audioUrl;
-            audioRef.current.loop = true;
-          }
+      } else if (selectedGuidance?.id === 'no-guidance') {
+        console.log('[调试] 无引导语模式，跳过音频播放');
+      }
 
-          // 设置音量
-          audioRef.current.volume = isMuted ? 0 : volume / 100;
-
-          // 播放音频
-          audioRef.current.play().catch(error => {
-            console.error('[调试] 播放音频失败:', error);
-            toast.error('播放音频失败，请重试');
-          });
-        } else {
-          console.log('[调试] 没有选择背景音效或音频元素不存在');
+      // 播放背景音效（如果有）
+      if (selectedSound && audioRef.current) {
+        console.log('[调试] 播放背景音效:', selectedSound.name);
+        if (!audioRef.current.src || !audioRef.current.src.includes(selectedSound.id)) {
+          audioRef.current.src = selectedSound.audioUrl;
+          audioRef.current.loop = true;
         }
-
-        // 播放引导语音频
-        if (guidanceAudio) {
-          console.log('[调试] 播放引导语音频...');
-
-          // 选择合适的音频URL
-          const audioUrl = guidanceAudio.src;
-
-          console.log(`[调试] 使用引导语音频URL: ${audioUrl}`);
-
-          // 播放音频
-          guidanceAudio.play().then(() => {
-            console.log('[调试] 引导语音频播放成功!');
-          }).catch(error => {
-            console.error('[调试] 播放引导语音频失败:', error);
-            toast.error('播放引导语音频失败，请重试');
-          });
-
-          // 当start.mp3播放完成后，播放自定义音频
-          guidanceAudio.onended = () => {
-            // 检查是否为自定义引导语且有customAudioUrl
-            if (selectedGuidance?.id === 'custom-guidance' && (selectedGuidance as any).customAudioUrl) {
-              console.log('[调试] start.mp3播放完成，准备播放自定义引导语音频:', (selectedGuidance as any).customAudioUrl);
-
-              try {
-                // 创建新的音频对象来播放自定义引导语
-                const customAudio = new Audio((selectedGuidance as any).customAudioUrl);
-                customAudio.volume = isMuted ? 0 : volume / 100;
-
-                // 更新引导语音频引用
-                setGuidanceAudio(customAudio);
-
-                // 播放自定义引导语音频
-                customAudio.play().then(() => {
-                  console.log('[调试] 自定义引导语音频播放成功!');
-                }).catch(error => {
-                  console.error('[调试] 播放自定义引导语音频失败:', error);
-                  toast.error('播放自定义引导语音频失败，请重试');
-                });
-              } catch (error) {
-                console.error('[调试] 创建自定义引导语音频对象失败:', error);
-                toast.error('播放自定义引导语音频失败，请重试');
-              }
-            } else {
-              console.log('[调试] 音频播放完成，无需后续操作');
-            }
-          };
-        } else {
-          console.log('[调试] 没有引导语音频对象');
-        }
+        audioRef.current.volume = isMuted ? 0 : volume / 100;
+        audioRef.current.play().catch(error => {
+          console.error('[调试] 播放音频失败:', error);
+          toast.error('播放音频失败，请重试');
+        });
       }
     } else {
       // 暂停所有音频
       console.log('[调试] 暂停所有音频');
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-
       if (guidanceAudio) {
-        console.log('[调试] 暂停引导语音频，当前时间:', guidanceAudio.currentTime);
         guidanceAudio.pause();
       }
-
-      if (courseAudio) {
-        courseAudio.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
     }
   };
@@ -781,20 +728,20 @@ export default function MeditationPage() {
   };
 
   // 添加 setShowCustomGuidance 方法
-  const setShowCustomGuidance = useCallback((show: boolean) => {
-    if (show) {
-      // 设置选中的引导语为自定义引导语
-      setSelectedGuidance({
-        id: 'custom-guidance',
-        title: t('创建专属引导语', 'Create Custom Guidance'),
-        description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
-        paragraphs: [],
-        content: <></>,
-      });
-      // 打开引导语对话框
-      setShowGuidanceDialog(true);
+  const setShowCustomGuidance = useCallback(() => {
+    // 设置选中的引导语为自定义引导语
+    const customGuidance = {
+      id: 'custom-guidance',
+      title: t('创建专属引导语', 'Create Custom Guidance'),
+      description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
+      paragraphs: [],
+      content: <></>,
+      audioUrl: 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
+    };
 
-    }
+    console.log('[调试] 点击创建专属引导语');
+    handleGuidanceSelect(customGuidance);
+    setShowGuidanceDialog(true);
   }, [t]);
 
   return (
@@ -1085,7 +1032,7 @@ export default function MeditationPage() {
         {/* 顶部提示词 - 始终显示 */}
         <div
           className="text-xs opacity-60 my-4 hover:opacity-100 transition-all cursor-pointer flex items-center justify-center gap-2"
-          onClick={() => setShowCustomGuidance(true)}
+          onClick={setShowCustomGuidance}
         >
           <PencilIcon className="w-3 h-3" />
           {t("分享你的困扰，AI 为你定制专属冥想引导", "Share your concerns, let AI create your personalized meditation guidance")}

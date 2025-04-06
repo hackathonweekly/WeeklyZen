@@ -24,6 +24,7 @@ interface GuidanceSelectorProps {
   t: (zh: string, en: string) => string;
   onCloseDialog?: () => void;
   onPlay?: () => void;
+  onCustomAudioGenerated?: (audioUrl: string | undefined) => void;
 }
 
 // 创建"无引导语"选项
@@ -60,7 +61,8 @@ export function GuidanceSelector({
   isDarkTheme,
   t,
   onCloseDialog,
-  onPlay
+  onPlay,
+  onCustomAudioGenerated
 }: GuidanceSelectorProps) {
   const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
@@ -215,6 +217,7 @@ export function GuidanceSelector({
             )}>
               <CustomGuidance
                 onGuidanceCreated={handleGuidanceCreated}
+                onCustomAudioGenerated={onCustomAudioGenerated}
                 isDarkTheme={isDarkTheme}
                 t={t}
                 onGenerateComplete={() => {

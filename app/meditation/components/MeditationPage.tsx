@@ -140,6 +140,9 @@ export default function MeditationPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
+  // 添加自定义引导语音频URL状态
+  const [customAudioUrl, setCustomAudioUrl] = useState<string | undefined>(undefined);
+
   // 潮汐冥想课程相关
   const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
   const [courseAudio, setCourseAudio] = useState<HTMLAudioElement | null>(null);
@@ -311,6 +314,32 @@ export default function MeditationPage() {
       audio.volume = isMuted ? 0 : volume / 100;
       console.log('[调试] 设置引导语音频音量:', isMuted ? 0 : volume / 100);
 
+      // 如果是自定义引导语且有自定义音频URL，设置播放结束后继续播放自定义音频
+      if ((guidance.id === 'custom-guidance' ||
+        audioUrl.includes('start.mp3')) &&
+        customAudioUrl) {
+
+        console.log('[调试] 设置自定义引导语音频播放结束事件，将播放:', customAudioUrl);
+
+        audio.onended = () => {
+          console.log('[调试] 引导语音频播放结束，开始播放自定义音频');
+
+          // 创建新的音频元素播放自定义音频
+          const customAudio = new Audio(customAudioUrl);
+          customAudio.volume = isMuted ? 0 : volume / 100;
+
+          // 播放自定义音频
+          customAudio.play().then(() => {
+            console.log('[调试] 自定义音频开始播放成功');
+            // 保存引用以便于后续控制
+            setGuidanceAudio(customAudio);
+          }).catch(error => {
+            console.error('[调试] 播放自定义音频失败:', error);
+            toast.error('播放自定义音频失败，请重试');
+          });
+        };
+      }
+
       audio.onloadeddata = () => console.log('[调试] 引导语音频加载完成');
       audio.onerror = (e) => console.error('[调试] 引导语音频加载出错:', e);
 
@@ -456,6 +485,36 @@ export default function MeditationPage() {
         console.log('[调试] 播放引导语音频...');
         guidanceAudio.volume = isMuted ? 0 : volume / 100;
 
+        // 检查是否需要设置结束后播放自定义音频的逻辑
+        if ((selectedGuidance?.id === 'custom-guidance' ||
+          guidanceAudio.src.includes('start.mp3')) &&
+          customAudioUrl) {
+
+          console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频:', customAudioUrl);
+
+          // 移除之前可能存在的ended事件监听器
+          guidanceAudio.onended = null;
+
+          // 添加音频播放结束事件
+          guidanceAudio.onended = () => {
+            console.log('[调试] 引导语音频播放结束，开始播放自定义音频');
+
+            // 创建新的音频元素播放自定义音频
+            const customAudio = new Audio(customAudioUrl);
+            customAudio.volume = isMuted ? 0 : volume / 100;
+
+            // 播放自定义音频
+            customAudio.play().then(() => {
+              console.log('[调试] 自定义音频开始播放成功');
+              // 保存引用以便于后续控制
+              setGuidanceAudio(customAudio);
+            }).catch(error => {
+              console.error('[调试] 播放自定义音频失败:', error);
+              toast.error('播放自定义音频失败，请重试');
+            });
+          };
+        }
+
         guidanceAudio.play().then(() => {
           console.log('[调试] 引导语音频播放成功!');
         }).catch(error => {
@@ -517,6 +576,8 @@ export default function MeditationPage() {
     // 停止引导语音频，但不清除引导语的选择状态
     if (guidanceAudio) {
       console.log('[调试] 停止引导语音频');
+      // 移除onended事件监听器
+      guidanceAudio.onended = null;
       guidanceAudio.pause();
       // 创建新的音频实例以重置播放位置
       if (selectedGuidance?.audioUrl) {
@@ -743,6 +804,17 @@ export default function MeditationPage() {
     handleGuidanceSelect(customGuidance);
     setShowGuidanceDialog(true);
   }, [t]);
+
+  // 添加接收customAudioUrl的回调函数
+  const handleCustomAudioGenerated = useCallback((audioUrl: string | undefined) => {
+    console.log('[调试] 收到自定义引导语音频URL:', audioUrl);
+    setCustomAudioUrl(audioUrl);
+  }, []);
+
+  // 添加 useEffect 来监听 customAudioUrl 的变化
+  useEffect(() => {
+    console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
+  }, [customAudioUrl]);
 
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
@@ -1118,6 +1190,7 @@ export default function MeditationPage() {
               t={t}
               onCloseDialog={() => setShowGuidanceDialog(false)}
               onPlay={togglePlayPause}
+              onCustomAudioGenerated={handleCustomAudioGenerated}
             />
           </div>
         </DialogContent>

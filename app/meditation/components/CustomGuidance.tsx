@@ -4,7 +4,7 @@ import { useState, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, FlaskConical } from 'lucide-react';
+import { Wand2, Loader2, FlaskConical } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
@@ -20,12 +20,13 @@ interface CustomGuidanceProps {
         audioUrl?: string;
         customAudioUrl?: string;
     }) => void;
+    onCustomAudioGenerated?: (customAudioUrl: string | undefined) => void;
     isDarkTheme: boolean;
     t: (zh: string, en: string) => string;
     onGenerateComplete?: () => void;
 }
 
-export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateComplete }: CustomGuidanceProps) {
+export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDarkTheme, t, onGenerateComplete }: CustomGuidanceProps) {
     const [userInput, setUserInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTestMode, setIsTestMode] = useState(false);
@@ -127,26 +128,13 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateCo
                 audioErrorMessage = error.message || "Unknown error";
             }
 
-            // 创建引导语对象并回调
-            const newGuidance = {
-                id: uuidv4(),
-                title: t("自定义引导语", "Custom Guidance"),
-                description: isTestMode
-                    ? "测试模式生成的引导语"
-                    : userInput.substring(0, 100) + (userInput.length > 100 ? '...' : ''),
-                paragraphs: deepseekResponse.paragraphs,
-                content: (
-                    <div>
-                        {deepseekResponse.paragraphs.map((paragraph: string, index: number) => (
-                            <p key={index} className="mb-4">{paragraph}</p>
-                        ))}
-                    </div>
-                ),
-                audioUrl: audioUrl
-            };
-
-            console.log("[引导语生成] 创建完成，准备添加到列表");
-            onGuidanceCreated(newGuidance);
+            // 回调 - 添加非空检查
+            if (onCustomAudioGenerated) {
+                console.log("[引导语生成] 调用onCustomAudioGenerated，传递音频URL:", audioUrl);
+                onCustomAudioGenerated(audioUrl);
+            } else {
+                console.log("[引导语生成] onCustomAudioGenerated未定义，跳过回调");
+            }
 
             // 重置输入和错误状态
             setUserInput('');
@@ -154,17 +142,17 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateCo
 
             if (audioError) {
                 toast({
-                    title: t("引导语创建成功，但无音频", "Guidance created without audio"),
+                    title: t("音频生成失败", "Audio generation failed"),
                     description: t(
-                        `引导语创建成功，但音频生成失败: ${audioErrorMessage}`,
-                        `Your guidance was created but without audio: ${audioErrorMessage}`
+                        `音频生成失败: ${audioErrorMessage}`,
+                        `Audio generation failed: ${audioErrorMessage}`
                     ),
-                    variant: "default",
+                    variant: "destructive",
                 });
             } else {
                 toast({
-                    title: t("引导语创建成功", "Guidance created successfully"),
-                    description: t("你的自定义引导语已成功创建", "Your custom guidance has been created"),
+                    title: t("音频生成成功", "Audio generated successfully"),
+                    description: t("自定义音频已准备好，可以开始播放", "Custom audio is ready to play"),
                 });
             }
         } catch (e) {
@@ -232,6 +220,57 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateCo
         return data.audioUrl;
     };
 
+    // 添加测试引导语生成函数
+    const generateTestGuidance = async () => {
+        console.log("[引导语生成] 开始生成测试引导语");
+        setIsGenerating(true);
+        setGenerateError(null);
+
+        try {
+            // 如果提供了onGenerateComplete回调，立即调用它
+            if (onGenerateComplete) {
+                console.log("[引导语生成] 调用完成回调");
+                onGenerateComplete();
+            }
+
+            // 预设的测试引导语内容
+            const testParagraphs = [
+                "让我们开始这段宁静的冥想之旅...",
+                "深深地吸一口气，感受空气流入你的身体...",
+                "慢慢地呼出，释放所有的紧张和压力...",
+                "让我们一起进入平静的状态，享受当下的时刻...",
+                "保持这种平和的呼吸，让心灵沉浸在宁静中..."
+            ];
+
+            // 定义测试用的自定义音频URL
+            const testCustomAudioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/meditation.mp3';
+
+            // 调用新的回调函数传递自定义音频URL
+            if (onCustomAudioGenerated) {
+                console.log("[引导语生成] 测试模式：调用onCustomAudioGenerated，传递音频URL:", testCustomAudioUrl);
+                onCustomAudioGenerated(testCustomAudioUrl);
+            } else {
+                console.log("[引导语生成] onCustomAudioGenerated未定义，跳过回调");
+            }
+
+            // 重置输入和错误状态
+            setUserInput('');
+            setGenerateError(null);
+
+            // 显示成功提示
+            toast({
+                title: t("测试音频已准备", "Test audio is ready"),
+                description: t("可以开始播放测试音频", "You can start playing the test audio"),
+            });
+        } catch (e) {
+            const error = e as Error;
+            console.error("[引导语生成] 错误:", error);
+            setGenerateError(error.message || t("未知错误，请稍后重试", "Unknown error, please try again later"));
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     return (
         <div className={`p-4 rounded-lg border ${isDarkTheme ? 'bg-indigo-950/30 border-indigo-800' : 'bg-blue-50 border-blue-200'}`}>
             <div className="space-y-4">
@@ -293,8 +332,31 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateCo
                     </div>
                 )}
 
-                {/* 生成按钮 */}
-                <div className="flex justify-end">
+                {/* 按钮区域 */}
+                <div className="flex justify-end space-x-2">
+                    {/* 测试按钮 */}
+                    <Button
+                        onClick={generateTestGuidance}
+                        disabled={isGenerating}
+                        className={`${isDarkTheme
+                            ? 'bg-orange-600 hover:bg-orange-500 text-white disabled:bg-orange-900/50'
+                            : 'bg-orange-600 hover:bg-orange-500 text-white disabled:bg-orange-300'
+                            } transition-colors`}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {t("生成中...", "Generating...")}
+                            </>
+                        ) : (
+                            <>
+                                <FlaskConical className="mr-2 h-4 w-4" />
+                                {t("测试效果", "Test Effect")}
+                            </>
+                        )}
+                    </Button>
+
+                    {/* 生成按钮 */}
                     <Button
                         onClick={generateGuidance}
                         disabled={isGenerating || (!isTestMode && (userInput.length === 0 || userInput.length > MAX_CHARS))}
@@ -311,9 +373,7 @@ export function CustomGuidance({ onGuidanceCreated, isDarkTheme, t, onGenerateCo
                         ) : (
                             <>
                                 <Wand2 className="mr-2 h-4 w-4" />
-                                {isTestMode
-                                    ? t("测试生成", "Test Generate")
-                                    : t("生成引导语", "Generate Guidance")}
+                                {t("生成引导语", "Generate Guidance")}
                             </>
                         )}
                     </Button>

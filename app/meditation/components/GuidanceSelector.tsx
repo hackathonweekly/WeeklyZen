@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, ChevronRight, VolumeX, Volume2, Plus, ChevronDown } from 'lucide-react';
 import { CustomGuidance } from './CustomGuidance';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface GuidanceType {
   content: ReactNode;
@@ -25,6 +26,9 @@ interface GuidanceSelectorProps {
   onCloseDialog?: () => void;
   onPlay?: () => void;
   onCustomAudioGenerated?: (audioUrl: string | undefined) => void;
+  customAudioUrl?: string;
+  volume?: number;
+  isMuted?: boolean;
 }
 
 // 创建"无引导语"选项
@@ -62,7 +66,10 @@ export function GuidanceSelector({
   t,
   onCloseDialog,
   onPlay,
-  onCustomAudioGenerated
+  onCustomAudioGenerated,
+  customAudioUrl,
+  volume = 100,
+  isMuted = false
 }: GuidanceSelectorProps) {
   const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
@@ -73,13 +80,48 @@ export function GuidanceSelector({
 
   // 组件卸载时清理音频
   useEffect(() => {
+    if (!guidanceAudio) return;
+
+    // 创建定时器
+    const timer = setTimeout(() => {
+      const handleAudioEnd = () => {
+        // 检查三个条件
+        const isStartAudio = guidanceAudio.src.includes('start.mp3');
+        const isCustomGuidance = selectedGuidance?.id === 'custom-guidance';
+        const isSelectedStartAudio = selectedGuidance?.audioUrl?.includes('start.mp3');
+
+        // 如果满足任一条件且存在 customAudioUrl，则播放自定义音频
+        if ((isStartAudio || isCustomGuidance || isSelectedStartAudio) && customAudioUrl) {
+          // 确保在浏览器环境中运行
+          if (typeof window !== 'undefined') {
+            const customAudio = new window.Audio(customAudioUrl);
+            // 设置音量和静音状态
+            customAudio.volume = isMuted ? 0 : volume / 100;
+            // 保存音频引用以便控制
+            setGuidanceAudio(customAudio);
+            // 播放音频
+            // customAudio.play().then(() => {
+            //   console.log('[调试] 自定义音频开始播放成功');
+            // }).catch(error => {
+            //   console.error('[调试] 播放自定义音频失败:', error);
+            //   toast.error('播放自定义音频失败，请重试');
+            // });
+          }
+        }
+      };
+
+      guidanceAudio.addEventListener('ended', handleAudioEnd);
+
+      return () => {
+        guidanceAudio.removeEventListener('ended', handleAudioEnd);
+      };
+    }, 1000);
+
+    // 清理函数：组件卸载时清理定时器
     return () => {
-      if (guidanceAudio) {
-        guidanceAudio.pause();
-        guidanceAudio.src = '';
-      }
+      clearTimeout(timer);
     };
-  }, [guidanceAudio]);
+  }, [guidanceAudio, selectedGuidance, customAudioUrl, volume, isMuted]);
 
   // 处理引导语选择
   const handleGuidanceSelect = (guidance: GuidanceType) => {

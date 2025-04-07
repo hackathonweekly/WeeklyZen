@@ -114,7 +114,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 if (isTestMode) {
                     // 测试模式使用预设的音频URL
                     console.log("[引导语生成] 测试模式：使用预设音频URL");
-                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/bodyscan.mp3";
+                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
                 } else {
                     // 正常模式调用API生成音频
                     console.log("[引导语生成] 开始调用豆包 TTS API");
@@ -243,7 +243,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             ];
 
             // 定义测试用的自定义音频URL
-            const testCustomAudioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/meditation.mp3';
+            const testCustomAudioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3';
 
             // 调用新的回调函数传递自定义音频URL
             if (onCustomAudioGenerated) {

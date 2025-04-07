@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -329,14 +329,14 @@ export default function MeditationPage() {
           customAudio.volume = isMuted ? 0 : volume / 100;
 
           // 播放自定义音频
-          customAudio.play().then(() => {
-            console.log('[调试] 自定义音频开始播放成功');
-            // 保存引用以便于后续控制
-            setGuidanceAudio(customAudio);
-          }).catch(error => {
-            console.error('[调试] 播放自定义音频失败:', error);
-            toast.error('播放自定义音频失败，请重试');
-          });
+          // customAudio.play().then(() => {
+          //   console.log('[调试] 自定义音频开始播放成功');
+          //   // 保存引用以便于后续控制
+          //   setGuidanceAudio(customAudio);
+          // }).catch(error => {
+          //   console.error('[调试] 播放自定义音频失败:', error);
+          //   toast.error('播放自定义音频失败，请重试');
+          // });
         };
       }
 
@@ -504,14 +504,14 @@ export default function MeditationPage() {
             customAudio.volume = isMuted ? 0 : volume / 100;
 
             // 播放自定义音频
-            customAudio.play().then(() => {
-              console.log('[调试] 自定义音频开始播放成功');
-              // 保存引用以便于后续控制
-              setGuidanceAudio(customAudio);
-            }).catch(error => {
-              console.error('[调试] 播放自定义音频失败:', error);
-              toast.error('播放自定义音频失败，请重试');
-            });
+            // customAudio.play().then(() => {
+            //   console.log('[调试] 自定义音频开始播放成功');
+            //   // 保存引用以便于后续控制
+            //   setGuidanceAudio(customAudio);
+            // }).catch(error => {
+            //   console.error('[调试] 播放自定义音频失败:', error);
+            //   toast.error('播放自定义音频失败，请重试');
+            // });
           };
         }
 
@@ -815,6 +815,47 @@ export default function MeditationPage() {
   useEffect(() => {
     console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
   }, [customAudioUrl]);
+
+  // 播放自定义音频
+  useEffect(() => {
+    // 添加1秒延迟
+    setTimeout(() => {
+      if (!guidanceAudio) return;
+
+      var customAudio: SetStateAction<HTMLAudioElement | null> = null;
+
+      const handleAudioEnd = () => {
+        // 检查三个条件
+        const isStartAudio = guidanceAudio.src.includes('start.mp3');
+        const isCustomGuidance = selectedGuidance?.id === 'custom-guidance';
+        const isSelectedStartAudio = selectedGuidance?.audioUrl?.includes('start.mp3');
+
+        // 如果满足任一条件且存在 customAudioUrl，则播放自定义音频
+        if ((isStartAudio || isCustomGuidance || isSelectedStartAudio) && customAudioUrl) {
+          if (customAudio == null) {
+            customAudio = new Audio(customAudioUrl);
+            // 设置音量和静音状态
+            customAudio.volume = isMuted ? 0 : volume / 100;
+            // 保存音频引用以便控制
+            setGuidanceAudio(customAudio);
+            // 播放音频
+            customAudio.play().then(() => {
+              console.log('[调试] 自定义音频开始播放成功');
+            }).catch(error => {
+              console.error('[调试] 播放自定义音频失败:', error);
+              toast.error('播放自定义音频失败，请重试');
+            });
+          }
+        }
+      };
+
+      guidanceAudio.addEventListener('ended', handleAudioEnd);
+
+      return () => {
+        guidanceAudio.removeEventListener('ended', handleAudioEnd);
+      };
+    }, 1000); // 1秒延迟
+  }, [guidanceAudio, selectedGuidance, customAudioUrl, volume, isMuted]);
 
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>

@@ -553,6 +553,8 @@ export default function MeditationPage() {
   // 重置冥想
   const resetMeditation = () => {
     console.log('[调试] 开始重置冥想...');
+    // 重置播放标记
+    hasPlayedCustomAudioRef.current = false;
 
     // 重置时间到选择的时长
     setTimeLeft(selectedDuration * 60);
@@ -816,36 +818,39 @@ export default function MeditationPage() {
     console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
   }, [customAudioUrl]);
 
-  // 播放自定义音频
+  // 在组件顶部其他 state 声明附近添加
+  const hasPlayedCustomAudioRef = useRef(false);
+
+  // 修改播放自定义音频的 useEffect
   useEffect(() => {
     // 添加1秒延迟
     setTimeout(() => {
       if (!guidanceAudio) return;
 
-      var customAudio: SetStateAction<HTMLAudioElement | null> = null;
-
       const handleAudioEnd = () => {
-        // 检查三个条件
-        const isStartAudio = guidanceAudio.src.includes('start.mp3');
-        const isCustomGuidance = selectedGuidance?.id === 'custom-guidance';
-        const isSelectedStartAudio = selectedGuidance?.audioUrl?.includes('start.mp3');
+        // 只有当播放的是 start.mp3 且有自定义音频，且还没有播放过自定义音频时才继续
+        if (guidanceAudio.src.includes('start.mp3') && customAudioUrl && !hasPlayedCustomAudioRef.current) {
+          console.log('[调试] start.mp3 播放结束，准备播放自定义音频');
+          hasPlayedCustomAudioRef.current = true; // 标记已经播放过
 
-        // 如果满足任一条件且存在 customAudioUrl，则播放自定义音频
-        if ((isStartAudio || isCustomGuidance || isSelectedStartAudio) && customAudioUrl) {
-          if (customAudio == null) {
-            customAudio = new Audio(customAudioUrl);
-            // 设置音量和静音状态
-            customAudio.volume = isMuted ? 0 : volume / 100;
-            // 保存音频引用以便控制
-            setGuidanceAudio(customAudio);
-            // 播放音频
-            customAudio.play().then(() => {
-              console.log('[调试] 自定义音频开始播放成功');
-            }).catch(error => {
-              console.error('[调试] 播放自定义音频失败:', error);
-              toast.error('播放自定义音频失败，请重试');
-            });
-          }
+          const customAudio = new Audio(customAudioUrl);
+          customAudio.volume = isMuted ? 0 : volume / 100;
+
+          // 设置自定义音频播放完成后的处理
+          customAudio.addEventListener('ended', () => {
+            console.log('[调试] 自定义音频播放完成');
+            setGuidanceAudio(null);
+            // 不需要移除事件监听器，因为我们使用了 ref 来跟踪状态
+          });
+
+          // 播放自定义音频
+          setGuidanceAudio(customAudio);
+          customAudio.play().then(() => {
+            console.log('[调试] 自定义音频开始播放');
+          }).catch(error => {
+            console.error('[调试] 播放自定义音频失败:', error);
+            toast.error('播放自定义音频失败，请重试');
+          });
         }
       };
 

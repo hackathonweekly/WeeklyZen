@@ -816,6 +816,15 @@ export default function MeditationPage() {
   // 添加 useEffect 来监听 customAudioUrl 的变化
   useEffect(() => {
     console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
+    if (customAudioUrl) {
+      toast.success('自定义引导语生成成功', {
+        description: '可以开始播放引导语了'
+      });
+    } else {
+      toast.error('自定义引导语生成失败', {
+        description: '请重新尝试生成'
+      });
+    }
   }, [customAudioUrl]);
 
   // 在组件顶部其他 state 声明附近添加

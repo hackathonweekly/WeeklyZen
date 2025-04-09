@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, SetStateAction } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, SetStateAction } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Music,
@@ -160,11 +160,15 @@ export default function MeditationPage() {
   });
 
   // 初始化引导语音频对象
-  const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(() => {
-    const audio = new Audio('https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3');
-    audio.volume = 0.25; // 默认音量 25%
-    return audio;
-  });
+  const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3');
+      audio.volume = 0.25;
+      setGuidanceAudio(audio);
+    }
+  }, []);
 
   // 对话框状态
   const [showSoundDialog, setShowSoundDialog] = useState(false);

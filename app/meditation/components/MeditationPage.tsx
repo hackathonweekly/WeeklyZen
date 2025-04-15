@@ -51,6 +51,8 @@ import { SoundSelector } from './SoundSelector';
 import { GuidanceSelector } from './GuidanceSelector';
 import { CourseSelector } from './CourseSelector';
 import { BreathingSphere } from '@/components/breathing-sphere';
+import { MeditationHeader } from './MeditationHeader';
+import { MeditationEncouragement } from './MeditationEncouragement';
 
 // 简单的翻译函数
 const t = (zh: string, en: string): string => {
@@ -66,54 +68,6 @@ const durationOptions = [
   { value: 15, label: '15分钟' },
   { value: 30, label: '30分钟' },
   { value: 60, label: '60分钟' },
-];
-
-// 鼓励语句列表
-const encouragements = [
-  "今天的冥想是给自己最好的礼物，继续保持！",
-  "每一次呼吸都是新的开始，你正在变得更加平静。",
-  "坚持冥想，你会发现内心的宁静一直都在。",
-  "生活中的小暂停，带来大改变。为你的冥想习惯点赞！",
-  "冥想不是为了变成更好的人，而是更好地接受自己。做得很棒！",
-  "静心，观察，接纳。你的冥想之旅正在稳步前进！",
-  "与自己的约会很重要，感谢你珍视这段时间。",
-  "每次冥想都是一次修行，感谢你给自己这段宝贵的时光。",
-  "内在的力量源于持续的练习，你已经迈出了重要的一步。",
-  "世界喧嚣，但你找到了自己的平静。这是一种力量。",
-  "冥想就像浇灌心灵的花园，你已经种下了平静的种子。",
-  "感谢你对自己的承诺，这一刻的平静会延续到生活的各个方面。",
-  "每一次专注的呼吸，都是对心灵的温柔抚慰。",
-  "在喧嚣的世界里，你为自己创造了一方宁静。",
-  "今天的冥想会让你整天都保持平静的能量。",
-  "冥想不是追求完美，而是接受当下的自己。",
-  "正念的力量会在你的日常生活中悄然展现。",
-  "内在的宁静是最珍贵的财富，而你正在积累这份财富。",
-  "别小看短暂的冥想，它的力量会在日常生活中绽放。",
-  "你的心灵正在成为更宽广、更包容的空间。",
-];
-
-// 今日幸运场景预测
-const luckyScenarios = [
-  "今天，你在与朋友的对话中会获得特别的启发。",
-  "今天，自然环境中的一个细节会给你带来意外的快乐。",
-  "今天，一次偶然的邂逅可能会给你带来新的视角。",
-  "今天，你会在阅读中发现与自己生活相呼应的智慧。",
-  "今天，一个平凡的瞬间会让你感受到生活的美好。",
-  "今天，你会更容易感受到他人的善意。",
-  "今天，你的创造力将在工作或学习中得到发挥。",
-  "今天，你会比平时更容易找到解决问题的方法。",
-  "今天，你的一个小决定可能会带来意想不到的好结果。",
-  "今天，你会在家中发现一种新的舒适感。",
-  "今天，你的直觉会特别敏锐，不妨多倾听内心的声音。",
-  "今天，你会在与植物或动物的互动中体验到宁静。",
-  "今天，一段音乐或一首歌会触动你的心弦。",
-  "今天，你会在写作或表达中找到新的灵感。",
-  "今天，你的耐心会为自己或他人带来积极的改变。",
-  "今天，你会更容易沉浸在当下的体验中，不被过去或未来所扰。",
-  "今天，你会在一杯茶或咖啡中找到特别的满足感。",
-  "今天，天空或云朵的形状会给你带来愉悦的联想。",
-  "今天，一次深呼吸会让你找回内心的平衡。",
-  "今天，你的微笑会感染周围的人，创造更多积极的能量。"
 ];
 
 export default function MeditationPage() {
@@ -174,9 +128,7 @@ export default function MeditationPage() {
   const [showSoundDialog, setShowSoundDialog] = useState(false);
   const [showGuidanceDialog, setShowGuidanceDialog] = useState(false);
   const [showGuidanceTextDialog, setShowGuidanceTextDialog] = useState(false);
-  const [showEncouragementDialog, setShowEncouragementDialog] = useState(false);
-  const [currentEncouragement, setCurrentEncouragement] = useState("");
-  const [currentLuckyScenario, setCurrentLuckyScenario] = useState("");
+  const [isShowingEncouragement, setIsShowingEncouragement] = useState(false);
   const [meditationCount, setMeditationCount] = useState(0);
 
   // 音频元素引用
@@ -365,21 +317,13 @@ export default function MeditationPage() {
 
   // 显示鼓励语
   const showEncouragement = () => {
-    // 随机选择一条鼓励语
-    const randomEncouragementIndex = Math.floor(Math.random() * encouragements.length);
-    setCurrentEncouragement(encouragements[randomEncouragementIndex]);
-
-    // 随机选择一条幸运场景
-    const randomLuckyIndex = Math.floor(Math.random() * luckyScenarios.length);
-    setCurrentLuckyScenario(luckyScenarios[randomLuckyIndex]);
-
     // 更新冥想次数
     const newCount = meditationCount + 1;
     setMeditationCount(newCount);
     localStorage.setItem('meditationCount', newCount.toString());
 
     // 显示鼓励对话框
-    setShowEncouragementDialog(true);
+    setIsShowingEncouragement(true);
   };
 
   // 处理课程选择
@@ -769,6 +713,7 @@ export default function MeditationPage() {
       description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
       paragraphs: [],
       content: <></>,
+      audioUrl: 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
     });
 
     // ... [其他初始化代码]
@@ -877,258 +822,28 @@ export default function MeditationPage() {
 
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
-      {/* 顶部导航 - 响应式设计 */}
-      <div className="p-4 flex justify-between items-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push('/')}
-          className="rounded-full"
-        >
-          <ArrowLeft size={20} />
-        </Button>
-
-        {/* 桌面版菜单 */}
-        <div className="hidden md:flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSoundDialog(true)}
-            className={`rounded-full ${buttonStyle}`}
-            disabled={isPlaying}
-          >
-            <Music size={16} className="md:mr-1" />
-            <span className="hidden md:inline">{t("背景音效", "Sound")}</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => !isPlaying && setShowGuidanceDialog(true)}
-            className={`rounded-full ${buttonStyle} ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isPlaying}
-          >
-            <BookOpen size={16} className="md:mr-1" />
-            <span className="hidden md:inline">{t("引导语", "Guidance")}</span>
-          </Button>
-
-          {/* <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCourseDialog(true)}
-            className={`rounded-full ${buttonStyle}`}
-          >
-            <Headphones size={16} className="md:mr-1" />
-            <span className="hidden md:inline">{t("冥想课程", "Courses")}</span>
-          </Button> */}
-
-          {/* 时长选择下拉菜单 */}
-          <DropdownMenu
-            open={showDurationMenu && !isPlaying}
-            onOpenChange={(open) => !isPlaying && setShowDurationMenu(open)}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={`rounded-full ${buttonStyle} ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={isPlaying}
-              >
-                <Clock size={16} className="md:mr-1" />
-                <span className="hidden md:inline">
-                  {selectedDuration < 1
-                    ? `${Math.round(selectedDuration * 60)}${t("秒", "sec")}`
-                    : `${selectedDuration}${t("分钟", "min")}`}
-                </span>
-                <ChevronDown size={14} className="hidden md:inline ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className={isDarkTheme ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}>
-              {durationOptions.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  className={`${option.isTest ? 'text-orange-500' : isDarkTheme ? 'text-slate-200' : 'text-slate-700'
-                    } cursor-pointer`}
-                  onClick={() => handleDurationSelect(option.value)}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* 主题切换按钮 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleTheme}
-            className={`rounded-full ${buttonStyle}`}
-          >
-            {isDarkTheme
-              ? '☀️'
-              : '🌙'}
-          </Button>
-        </div>
-
-        {/* 移动端菜单按钮 */}
-        <Sheet open={isMobileMenuOpen && !isPlaying} onOpenChange={(open) => !isPlaying && setIsMobileMenuOpen(open)}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={isPlaying}
-            >
-              <Menu size={20} />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="top" className={`p-0 ${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}`}>
-            <div className="flex flex-col p-4 space-y-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowSoundDialog(true);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full justify-start ${buttonStyle}`}
-                disabled={isPlaying}
-              >
-                <Music size={18} className="mr-2" />
-                {t("背景音效", "Sound")}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!isPlaying) {
-                    setShowGuidanceDialog(true);
-                    setIsMobileMenuOpen(false);
-                  }
-                }}
-                className={`w-full justify-start ${buttonStyle}`}
-                disabled={isPlaying}
-              >
-                <BookOpen size={18} className="mr-2" />
-                {t("引导语", "Guidance")}
-              </Button>
-
-              {/* <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!isPlaying) {
-                    setShowCourseDialog(true);
-                    setIsMobileMenuOpen(false);
-                  }
-                }}
-                className={`w-full justify-start ${buttonStyle}`}
-                disabled={isPlaying}
-              >
-                <Headphones size={18} className="mr-2" />
-                {t("冥想课程", "Courses")}
-              </Button> */}
-
-              {/* 移动端时长选择 */}
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <Clock size={18} className="mr-2" />
-                  <span>{t("冥想时长", "Duration")}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {durationOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant="outline"
-                      size="sm"
-                      className={`${selectedDuration === option.value
-                        ? isDarkTheme
-                          ? 'bg-blue-900/50 border-blue-700'
-                          : 'bg-blue-100 border-blue-300'
-                        : ''
-                        } ${option.isTest ? 'text-orange-500' : ''}`}
-                      onClick={() => {
-                        handleDurationSelect(option.value);
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 移动端主题切换 */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  toggleTheme();
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full justify-start ${buttonStyle}`}
-              >
-                {isDarkTheme
-                  ? <span className="flex items-center"><span className="mr-2">☀️</span>{t("亮色模式", "Light Mode")}</span>
-                  : <span className="flex items-center"><span className="mr-2">🌙</span>{t("暗色模式", "Dark Mode")}</span>
-                }
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <div className="relative">
-          <Button
-            id="volume-button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowVolumeSlider(!showVolumeSlider)}
-            className="rounded-full"
-          >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </Button>
-
-          {/* 音量滑块 - 响应式优化 */}
-          {showVolumeSlider && (
-            <div
-              id="volume-slider-container"
-              className={`absolute right-0 md:right-auto md:left-1/2 md:transform md:-translate-x-1/2 top-full mt-2 p-4 rounded-lg shadow-lg z-50 w-48 
-                ${isDarkTheme
-                  ? 'bg-slate-900/90 border border-slate-800'
-                  : 'bg-white/90 border border-slate-200'} 
-                backdrop-blur-sm transition-all duration-200`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <VolumeX size={16} className="text-slate-500" />
-                <span className={`text-xs ${isDarkTheme ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {volume}%
-                </span>
-                <Volume2 size={16} className="text-slate-500" />
-              </div>
-              <UISlider
-                value={[volume]}
-                min={0}
-                max={100}
-                step={1}
-                onValueChange={handleVolumeChange}
-                className={`my-2 ${isDarkTheme ? 'bg-slate-800' : 'bg-slate-200'}`}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleMute}
-                className={`w-full mt-2 text-xs ${isDarkTheme
-                  ? 'hover:bg-slate-800 text-slate-300'
-                  : 'hover:bg-slate-100 text-slate-600'
-                  }`}
-              >
-                {isMuted ? t("取消静音", "Unmute") : t("静音", "Mute")}
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      <MeditationHeader
+        isDarkTheme={isDarkTheme}
+        isPlaying={isPlaying}
+        isMuted={isMuted}
+        volume={volume}
+        showVolumeSlider={showVolumeSlider}
+        selectedDuration={selectedDuration}
+        showDurationMenu={showDurationMenu}
+        durationOptions={durationOptions}
+        buttonStyle={isDarkTheme ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'}
+        onBack={() => router.push('/')}
+        onSoundClick={() => setShowSoundDialog(true)}
+        onGuidanceClick={() => setShowGuidanceDialog(true)}
+        onThemeToggle={toggleTheme}
+        onVolumeClick={() => setShowVolumeSlider(!showVolumeSlider)}
+        onVolumeChange={handleVolumeChange}
+        onMuteToggle={toggleMute}
+        onDurationSelect={handleDurationSelect}
+        onDurationMenuChange={handleShowDurationMenu}
+        setShowVolumeSlider={setShowVolumeSlider}
+        t={t}
+      />
 
       {/* 选中课程显示 - 响应式优化 */}
       {selectedCourse && (
@@ -1156,7 +871,7 @@ export default function MeditationPage() {
               </span>
             </div>
             <div className="text-xs mt-1 opacity-80 px-2">
-              {t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于13分钟", "At least 13 minutes")}
+              {t("来源：周周冥想", "Source: WeeklyZen") + " | " + t("不低于5分钟", "At least 13 minutes")}
             </div>
           </>
         )}
@@ -1205,6 +920,15 @@ export default function MeditationPage() {
           </Button>
         </div>
       </div>
+
+      {/* 使用新的 MeditationEncouragement 组件 */}
+      <MeditationEncouragement
+        isDarkTheme={isDarkTheme}
+        showEncouragement={isShowingEncouragement}
+        selectedDuration={selectedDuration}
+        onClose={() => setIsShowingEncouragement(false)}
+        t={t}
+      />
 
       {/* 对话框组件 - 优化移动端显示 */}
       <Dialog open={showSoundDialog} onOpenChange={setShowSoundDialog}>
@@ -1280,101 +1004,6 @@ export default function MeditationPage() {
           </div>
         </DialogContent>
       </Dialog>
-      {/* 冥想结束鼓励对话框 - 优化设计 */}
-      <Dialog open={showEncouragementDialog} onOpenChange={setShowEncouragementDialog}>
-        <DialogContent className={`${isDarkTheme ? 'bg-gradient-to-b from-slate-900 via-indigo-950 to-blue-950' : 'bg-gradient-to-b from-white via-blue-50 to-blue-100'} w-[90vw] max-w-md mx-auto rounded-xl overflow-hidden p-0 border-0`}>
-          {/* 顶部光晕效果 */}
-          <div className={`absolute top-0 left-0 right-0 h-32 ${isDarkTheme ? 'bg-indigo-500/10' : 'bg-blue-500/10'} blur-3xl transform -translate-y-1/2`} />
-
-          <div className="relative z-10 p-6">
-            {/* 标题部分 */}
-            <div className="text-center mb-6">
-              <div className={`inline-block px-4 py-1 rounded-full text-sm font-medium mb-2 ${isDarkTheme ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-100 text-blue-700'}`}>
-                ✨ {t("冥想圆满", "Meditation Complete")} ✨
-              </div>
-              <h2 className={`text-xl font-semibold ${isDarkTheme ? 'text-white' : 'text-blue-800'}`}>
-                {t("内心平静的时刻", "A Moment of Inner Peace")}
-              </h2>
-            </div>
-
-            {/* 冥想者图标 */}
-            <div className="flex justify-center mb-8">
-              <div className={`relative h-28 w-28 rounded-full ${isDarkTheme ? 'bg-indigo-900/30' : 'bg-blue-100'} flex items-center justify-center`}>
-                <div className={`absolute inset-0 rounded-full ${isDarkTheme ? 'bg-indigo-600/10' : 'bg-blue-200/50'} blur-md`} />
-                <span className="text-5xl relative z-10">🧘</span>
-
-                {/* 装饰性光环 */}
-                <div className={`absolute -inset-2 rounded-full ${isDarkTheme ? 'border border-indigo-700/30' : 'border border-blue-200'} opacity-70`} />
-                <div className={`absolute -inset-4 rounded-full ${isDarkTheme ? 'border border-indigo-700/20' : 'border border-blue-200/70'} opacity-50`} />
-              </div>
-            </div>
-
-            {/* 冥想次数 */}
-            <div className="text-center mb-6">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${isDarkTheme ? 'bg-indigo-900/40 text-indigo-200' : 'bg-blue-100 text-blue-700'}`}>
-                <span className="font-semibold">🏆</span>
-                <span>
-                  {t("第", "#")}{meditationCount}{t("次冥想", "Meditation")}
-                </span>
-              </div>
-            </div>
-
-            {/* 鼓励语 */}
-            <div className={`mb-8 p-5 rounded-lg ${isDarkTheme ? 'bg-indigo-800/10 border border-indigo-800/20' : 'bg-white/80 border border-blue-100'}`}>
-              <p className={`text-lg italic text-center ${isDarkTheme ? 'text-indigo-200' : 'text-blue-700'}`}>
-                "{currentEncouragement}"
-              </p>
-            </div>
-
-            {/* 今日幸运 */}
-            <div className="mb-6">
-              <div className={`text-sm font-medium mb-2 ${isDarkTheme ? 'text-indigo-300' : 'text-blue-700'}`}>
-                ✨ {t("今日幸运提示", "Today's Fortune")}
-              </div>
-              <div className={`p-4 rounded-lg ${isDarkTheme ? 'bg-blue-900/20 border border-blue-800/30' : 'bg-blue-50 border border-blue-200'}`}>
-                <p className={`${isDarkTheme ? 'text-blue-200' : 'text-blue-700'}`}>
-                  {currentLuckyScenario}
-                </p>
-              </div>
-            </div>
-
-            {/* 分享链接和关闭按钮 */}
-            <div className="flex justify-between items-center">
-              <div className={`text-xs ${isDarkTheme ? 'text-indigo-400' : 'text-blue-600'}`}>
-                WeeklyZen
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEncouragementDialog(false);
-                  resetMeditation(); // 点击继续时重置倒计时
-                }}
-                className={`px-4 ${isDarkTheme ? 'bg-indigo-900/30 border-indigo-600 text-indigo-300 hover:bg-indigo-800/40' : 'bg-white border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-              >
-                {t("继续", "Continue")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 冥想课程选择对话框 - 优化移动端显示 */}
-      {/* <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
-        <DialogContent className={`${isDarkTheme ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'} w-[90vw] max-w-md mx-auto`}>
-          <DialogHeader>
-            <DialogTitle>{t("选择冥想课程", "Choose Meditation Course")}</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto">
-            <CourseSelector
-              courses={courses}
-              selectedCourse={selectedCourse}
-              onCourseSelect={handleCourseSelect}
-              isDarkTheme={isDarkTheme}
-              t={t}
-            />
-          </div>
-        </DialogContent>
-      </Dialog> */}
 
       {/* 音频元素 */}
       <audio ref={audioRef} loop>

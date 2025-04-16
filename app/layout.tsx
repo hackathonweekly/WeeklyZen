@@ -9,7 +9,7 @@ import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AppThemeProvider } from '@/contexts/theme-context'
 import { LanguageProvider } from '@/contexts/language-context'
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "sonner"
 
 export const viewport: Viewport = {
   themeColor: [

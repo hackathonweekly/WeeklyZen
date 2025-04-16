@@ -762,20 +762,6 @@ export default function MeditationPage() {
     setCustomAudioUrl(audioUrl);
   }, []);
 
-  // 添加 useEffect 来监听 customAudioUrl 的变化
-  useEffect(() => {
-    console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
-    if (customAudioUrl) {
-      toast.success('自定义引导语生成成功', {
-        description: '可以开始播放引导语了'
-      });
-    } else {
-      toast.error('自定义引导语生成失败', {
-        description: '请重新尝试生成'
-      });
-    }
-  }, [customAudioUrl]);
-
   // 在组件顶部其他 state 声明附近添加
   const hasPlayedCustomAudioRef = useRef(false);
 
@@ -819,6 +805,11 @@ export default function MeditationPage() {
       };
     }, 1000); // 1秒延迟
   }, [guidanceAudio, selectedGuidance, customAudioUrl, volume, isMuted]);
+
+  // 添加 useEffect 来监听 customAudioUrl 的变化
+  useEffect(() => {
+    console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
+  }, [customAudioUrl]);
 
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
@@ -875,13 +866,21 @@ export default function MeditationPage() {
             </div>
           </>
         )}
-        {/* 顶部提示词 - 始终显示 */}
+        {/* 顶部提示词 - 只有非播放状态才能点击 */}
         <div
-          className="text-xs opacity-60 my-4 hover:opacity-100 transition-all cursor-pointer flex items-center justify-center gap-2"
-          onClick={setShowCustomGuidance}
+          className={`text-xs opacity-60 my-4 transition-all flex items-center justify-center gap-2 ${isPlaying
+            ? 'cursor-not-allowed'
+            : 'hover:opacity-100 cursor-pointer'
+            }`}
+          onClick={isPlaying ? undefined : setShowCustomGuidance}
         >
           <PencilIcon className="w-3 h-3" />
           {t("分享你的困扰，AI 为你定制专属冥想引导", "Share your concerns, let AI create your personalized meditation guidance")}
+          {isPlaying && (
+            <span className="ml-1 text-xs opacity-80">
+              {t("(请先暂停)", "(Please pause first)")}
+            </span>
+          )}
         </div>
       </div>
 

@@ -134,132 +134,143 @@ ${baseIntro}
         console.log('[OpenAI API 请求] 生成引导语，用户输入:', input.substring(0, 50) + (input.length > 50 ? '...' : ''));
 
         // 调用OpenAI API
-        const response = await fetch(`${apiEndpoint}/v1/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: modelName,
-                messages: [
-                    {
-                        role: 'system',
-                        content: '你是一位专业的冥想导师，擅长生成详细的冥想引导语。请确保生成的内容完整、详细，并符合所有要求。'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                temperature: 0.7,  // 降低创造性，使输出更稳定
-                max_tokens: 4000,  // 调整最大 token 数
-                presence_penalty: 0.3,  // 降低话题多样性，保持内容连贯
-                frequency_penalty: 0.3,  // 降低重复惩罚，允许必要的重复
-                top_p: 0.95,  // 提高采样范围
-                stop: null,  // 不设置停止条件
-                n: 1,  // 只生成一个回复
-                stream: false  // 不使用流式响应
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('[生成引导语] OpenAI API错误:', {
-                status: response.status,
-                error: errorData,
-                endpoint: apiEndpoint,
-                modelName: modelName
+        try {
+            const response = await fetch(`${apiEndpoint}/v1/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: '你是一位专业的冥想导师，擅长生成详细的冥想引导语。请确保生成的内容完整、详细，并符合所有要求。'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.7,  // 降低创造性，使输出更稳定
+                    max_tokens: 4000,  // 调整最大 token 数
+                    presence_penalty: 0.3,  // 降低话题多样性，保持内容连贯
+                    frequency_penalty: 0.3,  // 降低重复惩罚，允许必要的重复
+                    top_p: 0.95,  // 提高采样范围
+                    stop: null,  // 不设置停止条件
+                    n: 1,  // 只生成一个回复
+                    stream: false  // 不使用流式响应
+                })
             });
 
-            let errorMessage = '网络连接不稳定，请稍后重试';
-            if (response.status === 401) {
-                errorMessage = 'API密钥无效或已过期';
-            } else if (response.status === 429) {
-                errorMessage = 'API调用次数已达上限，请稍后再试';
-            } else if (response.status === 500) {
-                errorMessage = '服务器内部错误，请检查API配置';
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('[生成引导语] OpenAI API错误:', {
+                    status: response.status,
+                    error: errorData,
+                    endpoint: apiEndpoint,
+                    modelName: modelName
+                });
+
+                let errorMessage = '网络连接不稳定，请稍后重试';
+                if (response.status === 401) {
+                    errorMessage = 'API密钥无效或已过期';
+                } else if (response.status === 429) {
+                    errorMessage = 'API调用次数已达上限，请稍后再试';
+                } else if (response.status === 500) {
+                    errorMessage = '服务器内部错误，请检查API配置';
+                }
+
+                return NextResponse.json(
+                    {
+                        error: `Failed to generate text from OpenAI API: ${response.status}`,
+                        message: errorMessage,
+                        details: errorData
+                    },
+                    { status: response.status }
+                );
             }
 
-            return NextResponse.json(
-                {
-                    error: `Failed to generate text from OpenAI API: ${response.status}`,
-                    message: errorMessage,
-                    details: errorData
-                },
-                { status: response.status }
-            );
-        }
+            const data = await response.json();
 
-        const data = await response.json();
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                console.error('[生成引导语] OpenAI API响应格式错误:', data);
+                return NextResponse.json(
+                    {
+                        error: 'Invalid response from OpenAI API',
+                        message: '服务响应异常，请稍后重试'
+                    },
+                    { status: 500 }
+                );
+            }
 
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error('[生成引导语] OpenAI API响应格式错误:', data);
-            return NextResponse.json(
-                {
-                    error: 'Invalid response from OpenAI API',
-                    message: '服务响应异常，请稍后重试'
-                },
-                { status: 500 }
-            );
-        }
+            // 打印OpenAI API的原始响应内容
+            console.log('[OpenAI API 响应] 原始内容:', data.choices[0].message.content.substring(0, 200) + '...');
 
-        // 打印OpenAI API的原始响应内容
-        console.log('[OpenAI API 响应] 原始内容:', data.choices[0].message.content.substring(0, 200) + '...');
-
-        // 尝试从AI响应中解析JSON
-        try {
-            const content = data.choices[0].message.content;
-            console.log('[OpenAI API 响应] 原始内容长度:', content.length);
-
-            // 尝试解析 JSON
+            // 尝试从AI响应中解析JSON
             try {
-                const jsonContent = JSON.parse(content);
-                console.log('[OpenAI API 处理] 成功解析JSON格式的响应，段落数:', jsonContent.paragraphs?.length || 0);
+                const content = data.choices[0].message.content;
+                console.log('[OpenAI API 响应] 原始内容长度:', content.length);
 
-                // 计算总字数（用于调试）
-                const totalChars = jsonContent.paragraphs.reduce((acc: number, p: string) => acc + p.length, 0);
-                console.log('[OpenAI API 处理] 生成文本总字数:', totalChars);
+                // 尝试解析 JSON
+                try {
+                    const jsonContent = JSON.parse(content);
+                    console.log('[OpenAI API 处理] 成功解析JSON格式的响应，段落数:', jsonContent.paragraphs?.length || 0);
 
-                // 确保返回完整的文本内容
-                return NextResponse.json({
-                    paragraphs: jsonContent.paragraphs,
-                    fullText: jsonContent.paragraphs.join('\n\n')  // 添加完整文本
-                });
-            } catch (jsonError) {
-                // JSON 解析失败，使用文本分段处理
-                const paragraphs = content
-                    .split('\n\n')
-                    .filter((p: string) => p.trim().length > 0);
+                    // 计算总字数（用于调试）
+                    const totalChars = jsonContent.paragraphs.reduce((acc: number, p: string) => acc + p.length, 0);
+                    console.log('[OpenAI API 处理] 生成文本总字数:', totalChars);
 
-                console.log('[OpenAI API 处理] JSON解析失败，使用分段处理，段落数:', paragraphs.length);
+                    // 确保返回完整的文本内容
+                    return NextResponse.json({
+                        paragraphs: jsonContent.paragraphs,
+                        fullText: jsonContent.paragraphs.join('\n\n')  // 添加完整文本
+                    });
+                } catch (jsonError) {
+                    // JSON 解析失败，使用文本分段处理
+                    const paragraphs = content
+                        .split('\n\n')
+                        .filter((p: string) => p.trim().length > 0);
 
-                // 计算总字数（用于调试）
-                const totalChars = paragraphs.reduce((acc: number, p: string) => acc + p.length, 0);
-                console.log('[OpenAI API 处理] 生成文本总字数:', totalChars);
+                    console.log('[OpenAI API 处理] JSON解析失败，使用分段处理，段落数:', paragraphs.length);
 
-                // 确保返回完整的文本内容
-                return NextResponse.json({
-                    paragraphs: paragraphs,
-                    fullText: paragraphs.join('\n\n')  // 添加完整文本
-                });
+                    // 计算总字数（用于调试）
+                    const totalChars = paragraphs.reduce((acc: number, p: string) => acc + p.length, 0);
+                    console.log('[OpenAI API 处理] 生成文本总字数:', totalChars);
+
+                    // 确保返回完整的文本内容
+                    return NextResponse.json({
+                        paragraphs: paragraphs,
+                        fullText: paragraphs.join('\n\n')  // 添加完整文本
+                    });
+                }
+            } catch (error) {
+                console.error('[OpenAI API 处理] 处理响应时出错:', error);
+                return NextResponse.json(
+                    {
+                        error: 'Failed to process response',
+                        message: '处理响应时出错，请重试'
+                    },
+                    { status: 500 }
+                );
             }
-        } catch (error) {
-            console.error('[OpenAI API 处理] 处理响应时出错:', error);
+        } catch (fetchError) {
+            console.error('[生成引导语] 网络请求失败:', fetchError);
             return NextResponse.json(
                 {
-                    error: 'Failed to process response',
-                    message: '处理响应时出错，请重试'
+                    error: '网络连接错误',
+                    message: '网络连接不稳定，请检查网络后重试'
                 },
-                { status: 500 }
+                { status: 503 }
             );
         }
     } catch (error) {
         console.error('[生成引导语] 系统错误:', error);
         return NextResponse.json(
             {
-                error: 'Internal server error',
-                message: '系统暂时无法响应，请稍后重试'
+                error: '系统错误',
+                message: '服务暂时不可用，请稍后再试'
             },
             { status: 500 }
         );

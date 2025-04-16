@@ -195,28 +195,48 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             let audioError = false;
             let audioErrorMessage = "";
 
+            // 为每次生成的引导语添加时间戳，确保即使内容相同也会作为不同记录
+            const timestamp = new Date().toLocaleString();
+            // 构建历史提示，包含时间戳
+            const historyPrompt = isTestMode
+                ? `测试引导语 - ${timestamp}`
+                : `${userInput} (${timestamp})`;
+
+            // 先使用默认音频URL，确保一定会有记录保存
+            const defaultAudioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
+
+            // 立即保存到历史记录，不等待音频生成
+            console.log("[历史记录] 立即保存引导语到历史记录，时间:", timestamp);
+            saveToHistory(historyPrompt, defaultAudioUrl);
+
             // 尝试调用豆包 TTS API 生成音频
             try {
                 if (isTestMode) {
                     // 测试模式使用预设的音频URL
                     console.log("[引导语生成] 测试模式：使用预设音频URL");
-                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
+                    audioUrl = defaultAudioUrl; // 使用前面定义的默认URL
                 } else {
                     // 正常模式调用API生成音频
                     console.log("[引导语生成] 开始调用豆包 TTS API");
-                    audioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'), isTestMode);
-                }
-                console.log("[引导语生成] 获取到音频URL:", audioUrl);
+                    const generatedAudioUrl = await generateAudioFromText(deepseekResponse.paragraphs.join('\n\n'), isTestMode);
 
-                // 如果成功生成了音频URL，保存到历史记录
-                if (audioUrl) {
-                    saveToHistory(userInput, audioUrl);
+                    if (generatedAudioUrl) {
+                        console.log("[引导语生成] 获取到音频URL:", generatedAudioUrl);
+                        audioUrl = generatedAudioUrl;
+
+                        // 如果生成了新的音频URL，使用新URL再次保存到历史记录
+                        console.log("[历史记录] 更新历史记录中的音频URL");
+                        saveToHistory(historyPrompt, generatedAudioUrl);
+                    } else {
+                        audioUrl = defaultAudioUrl; // 如果没有生成新URL，使用默认URL
+                    }
                 }
             } catch (e) {
                 const error = e as Error;
                 console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
                 audioError = true;
                 audioErrorMessage = error.message || "Unknown error";
+                audioUrl = defaultAudioUrl; // 发生错误时使用默认URL
             }
 
             // 回调 - 添加非空检查
@@ -355,20 +375,16 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 onGenerateComplete();
             }
 
-            // 预设的测试引导语内容
-            const testParagraphs = [
-                "让我们开始这段宁静的冥想之旅...",
-                "深深地吸一口气，感受空气流入你的身体...",
-                "慢慢地呼出，释放所有的紧张和压力...",
-                "让我们一起进入平静的状态，享受当下的时刻...",
-                "保持这种平和的呼吸，让心灵沉浸在宁静中..."
-            ];
-
             // 定义测试用的自定义音频URL
             const testCustomAudioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3';
 
-            // 保存测试音频到历史记录
-            saveToHistory("测试引导语 - " + new Date().toLocaleString(), testCustomAudioUrl);
+            // 为每次测试生成添加时间戳
+            const timestamp = new Date().toLocaleString();
+            const testPrompt = `测试引导语 - ${timestamp}`;
+
+            // 保存测试音频到历史记录（确保每次生成都创建新记录）
+            console.log("[历史记录] 保存测试引导语到历史记录，时间:", timestamp);
+            saveToHistory(testPrompt, testCustomAudioUrl);
 
             // 调用新的回调函数传递自定义音频URL
             if (onCustomAudioGenerated) {
@@ -487,7 +503,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                     </Button>
 
                     {/* 测试按钮 */}
-                    <Button
+                    {/* <Button
                         onClick={generateTestGuidance}
                         disabled={isGenerating}
                         className={`${isDarkTheme
@@ -506,7 +522,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                                 {t("测试效果", "Test Effect")}
                             </>
                         )}
-                    </Button>
+                    </Button> */}
 
                     {/* 生成按钮 */}
                     <Button

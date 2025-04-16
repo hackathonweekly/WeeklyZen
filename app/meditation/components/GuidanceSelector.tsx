@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, ChevronRight, VolumeX, Volume2, Plus, ChevronDown } from 'lucide-react';
 import { CustomGuidance } from './CustomGuidance';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface GuidanceType {
   content: ReactNode;
@@ -13,7 +14,6 @@ interface GuidanceType {
   description: string;
   paragraphs: string[];
   audioUrl?: string | null;
-  type?: 'preset' | 'custom' | 'none';
 }
 
 interface GuidanceSelectorProps {
@@ -23,6 +23,12 @@ interface GuidanceSelectorProps {
   onShowFullText: () => void;
   isDarkTheme: boolean;
   t: (zh: string, en: string) => string;
+  onCloseDialog?: () => void;
+  onPlay?: () => void;
+  onCustomAudioGenerated?: (audioUrl: string | undefined) => void;
+  customAudioUrl?: string;
+  volume?: number;
+  isMuted?: boolean;
 }
 
 // 创建"无引导语"选项
@@ -32,7 +38,6 @@ const createNoGuidanceOption = (t: (zh: string, en: string) => string): Guidance
   description: t('专注于呼吸，无语音引导', 'Focus on your breath without voice guidance'),
   paragraphs: [],
   content: <></>,
-  type: 'none'
 });
 
 // 创建"自定义引导语"选项
@@ -42,7 +47,6 @@ const createCustomGuidanceOption = (t: (zh: string, en: string) => string): Guid
   description: t('分享你的困扰，AI为你生成个性化的冥想引导', 'Share your concerns, AI generates personalized meditation guidance'),
   paragraphs: [],
   content: <></>,
-  type: 'custom'
 });
 
 // 音频资源映射
@@ -50,6 +54,7 @@ const guidanceAudioMap: Record<string, string> = {
   'basic': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/meditation.mp3',
   'breath': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/breathtrain.mp3',
   'body': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/bodyscan.mp3',
+  'custom-guidance': 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3',
 };
 
 export function GuidanceSelector({
@@ -58,7 +63,13 @@ export function GuidanceSelector({
   onGuidanceSelect,
   onShowFullText,
   isDarkTheme,
-  t
+  t,
+  onCloseDialog,
+  onPlay,
+  onCustomAudioGenerated,
+  customAudioUrl,
+  volume = 100,
+  isMuted = false
 }: GuidanceSelectorProps) {
   const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
@@ -69,20 +80,54 @@ export function GuidanceSelector({
 
   // 组件卸载时清理音频
   useEffect(() => {
+    if (!guidanceAudio) return;
+
+    // 创建定时器
+    const timer = setTimeout(() => {
+      const handleAudioEnd = () => {
+        // 检查三个条件
+        const isStartAudio = guidanceAudio.src.includes('start.mp3');
+        const isCustomGuidance = selectedGuidance?.id === 'custom-guidance';
+        const isSelectedStartAudio = selectedGuidance?.audioUrl?.includes('start.mp3');
+
+        // 如果满足任一条件且存在 customAudioUrl，则播放自定义音频
+        if ((isStartAudio || isCustomGuidance || isSelectedStartAudio) && customAudioUrl) {
+          // 确保在浏览器环境中运行
+          if (typeof window !== 'undefined') {
+            const customAudio = new window.Audio(customAudioUrl);
+            // 设置音量和静音状态
+            customAudio.volume = isMuted ? 0 : volume / 100;
+            // 保存音频引用以便控制
+            setGuidanceAudio(customAudio);
+            // 播放音频
+            // customAudio.play().then(() => {
+            //   console.log('[调试] 自定义音频开始播放成功');
+            // }).catch(error => {
+            //   console.error('[调试] 播放自定义音频失败:', error);
+            //   toast.error('播放自定义音频失败，请重试');
+            // });
+          }
+        }
+      };
+
+      guidanceAudio.addEventListener('ended', handleAudioEnd);
+
+      return () => {
+        guidanceAudio.removeEventListener('ended', handleAudioEnd);
+      };
+    }, 1000);
+
+    // 清理函数：组件卸载时清理定时器
     return () => {
-      if (guidanceAudio) {
-        guidanceAudio.pause();
-        guidanceAudio.src = '';
-      }
+      clearTimeout(timer);
     };
-  }, [guidanceAudio]);
+  }, [guidanceAudio, selectedGuidance, customAudioUrl, volume, isMuted]);
 
   // 处理引导语选择
   const handleGuidanceSelect = (guidance: GuidanceType) => {
     console.log('[GuidanceSelector] 选择引导语:', {
       id: guidance.id,
       title: guidance.title,
-      type: guidance.type
     });
 
     // 停止当前播放的音频
@@ -91,24 +136,47 @@ export function GuidanceSelector({
       guidanceAudio.currentTime = 0;
     }
 
-    // 更新选中的引导语
+    // 如果是"无引导语"选项，不设置音频URL
+    if (guidance.id === 'no-guidance') {
+      console.log('[GuidanceSelector] 选择无引导语，不设置音频');
+      const updatedGuidance = {
+        ...guidance,
+        audioUrl: null
+      };
+      onGuidanceSelect(updatedGuidance);
+      return;
+    }
+
+    // 检查是否存在对应的音频资源
+    let audioUrl = guidance.audioUrl;
+    if (!audioUrl && guidanceAudioMap[guidance.id]) {
+      audioUrl = guidanceAudioMap[guidance.id];
+      console.log('[GuidanceSelector] 使用预设音频URL:', audioUrl);
+    }
+
+    // 如果是自定义引导语,强制使用 start.mp3
+    if (guidance.id === 'custom-guidance') {
+      audioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3';
+      console.log('[GuidanceSelector] 使用自定义引导语音频:', audioUrl);
+    }
+
+    // 更新选中的引导语，确保包含正确的音频URL
     const updatedGuidance = {
       ...guidance,
-      type: guidance.id === 'custom-guidance' ? 'custom' : guidance.type
+      audioUrl: audioUrl
     };
-
-
-    // 如果是预设引导语且在音频映射表中存在，添加音频URL
-    if (guidance.id in guidanceAudioMap && !guidance.audioUrl) {
-      updatedGuidance.audioUrl = guidanceAudioMap[guidance.id];
-      console.log('[GuidanceSelector] 添加音频URL:', updatedGuidance.audioUrl);
-    }
 
     onGuidanceSelect(updatedGuidance);
   };
 
   const handleGuidanceCreated = (newGuidance: GuidanceType) => {
-    handleGuidanceSelect(newGuidance);
+    // 确保自定义引导语的ID始终为'custom-guidance'
+    const updatedGuidance = {
+      ...newGuidance,
+      id: 'custom-guidance' // 强制设置ID为'custom-guidance'
+    };
+
+    handleGuidanceSelect(updatedGuidance);
     setShowCustom(false);
   };
 
@@ -191,8 +259,14 @@ export function GuidanceSelector({
             )}>
               <CustomGuidance
                 onGuidanceCreated={handleGuidanceCreated}
+                onCustomAudioGenerated={onCustomAudioGenerated}
                 isDarkTheme={isDarkTheme}
                 t={t}
+                onGenerateComplete={() => {
+                  // 生成完成后关闭对话框并播放
+                  if (onCloseDialog) onCloseDialog();
+                  if (onPlay) onPlay();
+                }}
               />
             </div>
           )}

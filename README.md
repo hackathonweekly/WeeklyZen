@@ -33,6 +33,7 @@ WeeklyZen（周周冥想）是一个专注于冥想练习的网站，为创客�
 - 可自定义冥想时长
 - 包含适合冥想的背景音乐
 - 冥想计时与提示功能
+- 自定义AI生成引导语功能
 
 ### 5. 关于页面
 
@@ -92,12 +93,24 @@ WeeklyZen/
 ├── app/                # 应用路由和页面
 │   ├── about/          # 关于我们页面
 │   ├── api/            # API 路由
+│   │   └── generate-guidance/  # AI 生成引导语的接口
 │   ├── introduction/   # 冥想入门页面
 │   ├── meditation/     # 冥想练习页面
+│   │   └── components/ # 冥想页面组件
+│   │       ├── MeditationAudioController.tsx  # 音频控制逻辑
+│   │       ├── MeditationCore.tsx             # 冥想核心组件
+│   │       ├── MeditationDialogController.tsx # 对话框管理组件
+│   │       ├── MeditationHeader.tsx           # 顶部导航组件
+│   │       ├── MeditationEncouragement.tsx    # 冥想鼓励提示组件
+│   │       ├── CustomGuidance.tsx             # 自定义引导语组件
+│   │       ├── GuidanceSelector.tsx           # 引导语选择组件
+│   │       ├── SoundSelector.tsx              # 音效选择组件
+│   │       └── RefactoredMeditationPage.tsx   # 重构后的冥想页面
 │   ├── theme-demo/     # 主题演示页面
 │   └── page.tsx        # 首页
 ├── components/         # 组件
 │   ├── breathing-animation.tsx  # 呼吸动画组件
+│   ├── breathing-sphere.tsx     # 呼吸球组件
 │   ├── enhanced-header.tsx      # 增强版头部组件
 │   ├── language-switch.tsx      # 语言切换组件
 │   ├── main-nav.tsx             # 主导航
@@ -112,6 +125,49 @@ WeeklyZen/
 ├── public/             # 静态资源
 └── styles/             # 样式文件
 ```
+
+## 冥想页面组件详解
+
+冥想页面采用模块化设计，拆分为多个独立组件，提高代码可维护性和复用性：
+
+### 核心组件结构
+
+1. **MeditationPage.tsx / RefactoredMeditationPage.tsx**
+   - 冥想页面主组件，整合所有子组件
+   - 管理全局状态，协调各组件交互
+
+2. **MeditationAudioController.tsx**
+   - 导出 `useMeditationAudio` 钩子
+   - 管理音频播放、暂停、音量控制
+   - 处理背景音效、引导语音频和自定义音频
+   - 提供音频相关回调函数
+
+3. **MeditationDialogController.tsx**
+   - 管理所有对话框的状态和交互
+   - 导出 `useMeditationDialogs` 钩子
+   - 协调音效、引导语、课程选择等对话框
+
+4. **MeditationCore.tsx**
+   - 冥想核心界面组件
+   - 显示计时器和呼吸球动画
+   - 处理播放/暂停按钮逻辑
+   - 通知计时结束等事件
+
+5. **MeditationHeader.tsx**
+   - 页面顶部导航和控制栏
+   - 提供返回、主题切换功能
+   - 显示音效、引导语选择按钮
+   - 包含时长选择和音量控制
+
+6. **CustomGuidance.tsx**
+   - 处理自定义AI引导语生成
+   - 与后端API交互获取AI生成内容
+   - 管理问题输入和引导语生成
+
+7. **GuidanceSelector.tsx / SoundSelector.tsx**
+   - 引导语和音效选择界面
+   - 展示可选项列表和预览
+   - 处理选择交互和确认
 
 ## 主题系统特性
 

@@ -9,6 +9,7 @@ import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AppThemeProvider } from '@/contexts/theme-context'
 import { LanguageProvider } from '@/contexts/language-context'
+import { Toaster } from "sonner"
 
 export const viewport: Viewport = {
   themeColor: [
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   <div className="flex-1">{children}</div>
                 </div>
                 <TailwindIndicator />
+                <Toaster />
               </AppThemeProvider>
             </LanguageProvider>
           </ThemeProvider>

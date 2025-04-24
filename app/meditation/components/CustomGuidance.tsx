@@ -375,16 +375,20 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 onGenerateComplete();
             }
 
+            // 预设的测试引导语内容
+            const testParagraphs = [
+                "让我们开始这段宁静的冥想之旅...",
+                "深深地吸一口气，感受空气流入你的身体...",
+                "慢慢地呼出，释放所有的紧张和压力...",
+                "让我们一起进入平静的状态，享受当下的时刻...",
+                "保持这种平和的呼吸，让心灵沉浸在宁静中..."
+            ];
+
             // 定义测试用的自定义音频URL
             const testCustomAudioUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3';
 
-            // 为每次测试生成添加时间戳
-            const timestamp = new Date().toLocaleString();
-            const testPrompt = `测试引导语 - ${timestamp}`;
-
-            // 保存测试音频到历史记录（确保每次生成都创建新记录）
-            console.log("[历史记录] 保存测试引导语到历史记录，时间:", timestamp);
-            saveToHistory(testPrompt, testCustomAudioUrl);
+            // 保存测试音频到历史记录
+            saveToHistory("测试引导语 - " + new Date().toLocaleString(), testCustomAudioUrl);
 
             // 调用新的回调函数传递自定义音频URL
             if (onCustomAudioGenerated) {
@@ -495,11 +499,15 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                             : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300'
                             } transition-colors`}
                     >
-                        <History className="mr-2 h-4 w-4" />
+                        <History className="mr-1 md:mr-2 h-4 w-4" />
+                        <span className="hidden md:inline">
+                            {showHistory
+                                ? t("隐藏历史", "Hide History")
+                                : t("历史记录", "History")}
+                        </span>
                         {showHistory
-                            ? t("隐藏历史", "Hide History")
-                            : t("历史记录", "History")}
-                        {showHistory ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                            ? <ChevronUp className="ml-0 md:ml-1 h-3 w-3" />
+                            : <ChevronDown className="ml-0 md:ml-1 h-3 w-3" />}
                     </Button>
 
                     {/* 测试按钮 */}
@@ -535,13 +543,17 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                     >
                         {isGenerating ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {t("生成中...", "Generating...")}
+                                <Loader2 className="mr-0 md:mr-2 h-4 w-4 animate-spin" />
+                                <span className="hidden md:inline">
+                                    {t("生成中...", "Generating...")}
+                                </span>
                             </>
                         ) : (
                             <>
-                                <Wand2 className="mr-2 h-4 w-4" />
-                                {t("生成引导语", "Generate Guidance")}
+                                <Wand2 className="mr-0 md:mr-2 h-4 w-4" />
+                                <span className="hidden md:inline">
+                                    {t("生成引导语", "Generate Guidance")}
+                                </span>
                             </>
                         )}
                     </Button>

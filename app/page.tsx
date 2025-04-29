@@ -527,6 +527,7 @@ export default function IndexPage() {
             <div className={`text-sm ${isDarkTheme ? 'text-indigo-300/70' : 'text-slate-600'} text-center md:text-right`}>
               <p className="mb-2">© 2024 WeeklyZen</p>
               <p>{t("版权声明: CC BY-NC-SA 4.0", "License: CC BY-NC-SA 4.0")}</p>
+              <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{t("粤ICP备2022122081号", "粤ICP备2022122081号")}</a></p>
             </div>
           </div>
         </div>

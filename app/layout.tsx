@@ -10,12 +10,16 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AppThemeProvider } from '@/contexts/theme-context'
 import { LanguageProvider } from '@/contexts/language-context'
 import { Toaster } from "sonner"
+import { MobileNav } from '@/components/mobile-nav'
 
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: 'white' },
     { media: '(prefers-color-scheme: dark)', color: 'black' },
   ],
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover', // 支持安全区域
 }
 
 export const metadata: Metadata = {
@@ -54,7 +58,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <div className="relative flex min-h-screen flex-col">
                   {/* SiteHeader Example, you can remove it.  */}
                   {/* <SiteHeader /> */}
-                  <div className="flex-1">{children}</div>
+                  <div className="flex-1 has-mobile-nav">{children}</div>
+                  <MobileNav />
                 </div>
                 <TailwindIndicator />
                 <Toaster />

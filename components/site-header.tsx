@@ -1,19 +1,15 @@
 "use client"
 
 import Link from 'next/link'
-import Image from 'next/image'
-import { useState } from 'react'
-import { Menu } from 'lucide-react'
 import { useTheme } from 'next-themes'
-
-import { siteConfig } from '@/config/site'
-import { MainNav } from '@/components/main-nav'
+import { useAppTheme } from '@/contexts/theme-context'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitch } from '@/components/language-switch'
+import { WechatLogin } from "@/components/wechat-login";
+import { UserAvatarMenu } from "@/components/user-avatar-menu";
+import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { cn } from '@/lib/utils'
-import { useAppTheme } from '@/contexts/theme-context'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 // 添加scrolled属性接口
 interface SiteHeaderProps {
@@ -21,76 +17,78 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({ scrolled = false }: SiteHeaderProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const isDarkTheme = resolvedTheme === 'dark'
+  const { isDarkTheme, themeStyles } = useAppTheme();
+  const { t } = useLanguage();
+  const { user, setUser } = useUser();
+
+  const headerBackgroundClass = scrolled
+    ? isDarkTheme
+      ? "bg-slate-950/90 backdrop-blur-md border-slate-800/50"
+      : "bg-white/90 backdrop-blur-md border-slate-200/70"
+    : "bg-transparent border-transparent";
 
   return (
-    <header className={cn(
-      "fixed top-0 z-40 w-full border-b transition-all duration-300",
-      scrolled 
-        ? "border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" 
-        : "border-transparent bg-transparent"
-    )}>
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
-        {/* Logo 和移动端菜单按钮 */}
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center">
-            <div className="relative h-8 w-auto">
-              <Image
-                src={isDarkTheme ? "/WZRightWhite.svg" : "/WZRight.svg"}
-                alt="WeeklyZen Logo"
-                width={145}
-                height={52}
-                className="object-contain"
-                priority
-              />
-            </div>
+    <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b ${headerBackgroundClass}`}>
+      <div className="container mx-auto flex items-center justify-between h-16 px-4">
+        {/* 桌面端导航容器，放在最左侧 */}
+        <div className="flex items-center space-x-6">
+          <Link href="/" className="flex items-center space-x-2 mr-6">
+            <span className={`text-xl md:text-2xl font-bold ${themeStyles.primaryText}`}>
+              WeeklyZen
+            </span>
           </Link>
+
+          {/* 桌面端导航项目 */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link
+              href="/"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("首页", "Home")}
+            </Link>
+            <Link
+              href="/meditation"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("开始冥想", "Meditate")}
+            </Link>
+            <Link
+              href="/introduction"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("冥想入门", "Introduction")}
+            </Link>
+            <Link
+              href="/about"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("关于我们", "About")}
+            </Link>
+          </div>
         </div>
 
-        {/* 桌面端导航 */}
-        <div className="hidden md:flex md:flex-1 md:items-center md:justify-between">
-          <MainNav items={siteConfig.mainNav} />
+        {/* 右侧工具栏 */}
+        <div className="flex items-center space-x-3">
+          {/* 移动端和桌面端都显示 */}
           <div className="flex items-center space-x-3">
             <LanguageSwitch />
             <ThemeToggle />
           </div>
-        </div>
 
-        {/* 移动端导航 */}
-        <div className="md:hidden">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[80vw] sm:w-[350px]">
-              <div className="flex flex-col space-y-4 py-4">
-                {siteConfig.mainNav.map(
-                  (item) =>
-                    item.href && (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="text-sm font-medium transition-colors hover:text-primary"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {item.title}
-                      </Link>
-                    )
-                )}
-                <div className="flex items-center space-x-4 mt-4">
-                  <LanguageSwitch />
-                  <ThemeToggle />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* 仅在桌面版显示登录按钮/用户头像 */}
+          <div className="hidden md:block">
+            {user ? (
+              <UserAvatarMenu />
+            ) : (
+              <WechatLogin
+                buttonVariant="outline"
+                buttonSize="sm"
+                onLoginSuccess={(userInfo) => setUser(userInfo)}
+              />
+            )}
+          </div>
         </div>
       </div>
     </header>
-  )
+  );
 }

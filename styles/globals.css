@@ -131,3 +131,25 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* 移动端底部安全区域，防止内容被导航栏遮挡 */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+  }
+  
+  /* 为了适应底部导航栏，在移动端给内容添加底部内边距 */
+  @media (max-width: 768px) {
+    .has-mobile-nav {
+      padding-bottom: 4rem; /* 与底部导航栏高度对应 */
+    }
+  }
+}
+
+/* 减少动画对用户的干扰 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

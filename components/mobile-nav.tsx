@@ -17,12 +17,14 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export function MobileNav() {
     const pathname = usePathname();
     const { t } = useLanguage();
     const { isDarkTheme } = useAppTheme();
     const { user, logout, setUser } = useUser();
+    const [sheetOpen, setSheetOpen] = useState(false);
 
     // 导航项定义
     const navItems = [
@@ -50,7 +52,7 @@ export function MobileNav() {
             icon: User,
             active: false,
             component: (
-                <Sheet>
+                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                     <SheetTrigger asChild>
                         <button
                             className={cn(
@@ -94,16 +96,19 @@ export function MobileNav() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Link
-                                            href="/about"
+                                        <button
+                                            onClick={() => {
+                                                setSheetOpen(false); // 关闭弹窗
+                                                window.location.href = "/about"; // 导航到关于页面
+                                            }}
                                             className={cn(
-                                                "flex items-center gap-2 p-3 rounded-md",
+                                                "flex items-center gap-2 p-3 rounded-md w-full text-left",
                                                 isDarkTheme ? "hover:bg-slate-800" : "hover:bg-slate-100"
                                             )}
                                         >
                                             <User className="h-5 w-5" />
                                             <span>{t("关于我们", "About")}</span>
-                                        </Link>
+                                        </button>
                                     </div>
 
                                     <Button

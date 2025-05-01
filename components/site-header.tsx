@@ -30,32 +30,41 @@ export function SiteHeader({ scrolled = false }: SiteHeaderProps) {
   return (
     <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b ${headerBackgroundClass}`}>
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link href="/" className="flex items-center space-x-2">
-          <span className={`text-xl md:text-2xl font-bold ${themeStyles.primaryText}`}>
-            WeeklyZen
-          </span>
-        </Link>
+        {/* 桌面端导航容器，放在最左侧 */}
+        <div className="flex items-center space-x-6">
+          <Link href="/" className="flex items-center space-x-2 mr-6">
+            <span className={`text-xl md:text-2xl font-bold ${themeStyles.primaryText}`}>
+              WeeklyZen
+            </span>
+          </Link>
 
-        {/* 桌面端导航 */}
-        <div className="hidden md:flex items-center space-x-6">
-          <Link
-            href="/meditation"
-            className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
-          >
-            {t("冥想", "Meditation")}
-          </Link>
-          <Link
-            href="/introduction"
-            className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
-          >
-            {t("入门", "Introduction")}
-          </Link>
-          <Link
-            href="/about"
-            className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
-          >
-            {t("关于", "About")}
-          </Link>
+          {/* 桌面端导航项目 */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link
+              href="/"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("首页", "Home")}
+            </Link>
+            <Link
+              href="/meditation"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("开始冥想", "Meditate")}
+            </Link>
+            <Link
+              href="/introduction"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("冥想入门", "Introduction")}
+            </Link>
+            <Link
+              href="/about"
+              className={`text-sm transition-colors ${themeStyles.primaryText} hover:opacity-80`}
+            >
+              {t("关于我们", "About")}
+            </Link>
+          </div>
         </div>
 
         {/* 右侧工具栏 */}

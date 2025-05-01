@@ -3,6 +3,7 @@
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useAppTheme } from "@/contexts/theme-context";
+import { useRouter } from "next/navigation";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,16 +14,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, User } from "lucide-react";
+import { useState } from "react";
 
 export function UserAvatarMenu() {
     const { user, logout } = useUser();
     const { t } = useLanguage();
     const { isDarkTheme } = useAppTheme();
+    const router = useRouter();
+    const [open, setOpen] = useState(false);
 
     if (!user) return null;
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
                 <button className="focus:outline-none">
                     <Avatar className="h-8 w-8 cursor-pointer border border-slate-200 dark:border-slate-800">
@@ -39,9 +43,15 @@ export function UserAvatarMenu() {
                     <span className="text-xs text-muted-foreground truncate">{user.openid}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => {
+                        setOpen(false); // 关闭下拉菜单
+                        router.push("/about"); // 导航到关于页面
+                    }}
+                >
                     <User className="mr-2 h-4 w-4" />
-                    <span>{t("个人中心", "Profile")}</span>
+                    <span>{t("关于我们", "About")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

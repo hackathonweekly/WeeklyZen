@@ -297,3 +297,35 @@ WECHAT_OPEN_SECRET=您的开放平台AppSecret
 - 开放平台的应用需要通过审核才能正式使用
 - 网站应用必须有ICP备案
 - 授权回调域必须配置SSL证书（https）
+```
+
+## 功能说明
+
+### 微信登录功能
+
+本项目实现了微信登录功能，支持以下场景：
+
+1. 微信内浏览器 - 一键授权登录
+2. PC浏览器 - 扫码登录
+3. 移动端非微信浏览器 - 引导用户在微信中打开
+
+### 隐私政策弹窗
+
+隐私政策弹窗组件(`PrivacyPolicyDialog`)用于在用户登录前展示用户协议和隐私条款。内容包括：
+
+- 使用微信登录时允许网站获取的用户信息(昵称、头像)
+- 数据使用说明
+- 登录授权说明
+
+使用方法：
+```jsx
+import { PrivacyPolicyDialog } from "@/components/privacy-policy-dialog";
+
+// 在组件中使用
+<PrivacyPolicyDialog />
+
+// 自定义触发文本
+<PrivacyPolicyDialog trigger="查看用户协议" />
+```
+
+当用户点击"用户协议"链接时，将弹出包含隐私声明的对话框。

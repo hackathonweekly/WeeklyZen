@@ -15,6 +15,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAppTheme } from "@/contexts/theme-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useUser } from "@/contexts/user-context";
+import { PrivacyPolicyDialog } from "@/components/privacy-policy-dialog";
 
 interface WechatLoginProps {
     onLoginSuccess?: (userInfo: any) => void;
@@ -252,9 +253,7 @@ export function WechatLogin({
 
                         <div className="text-xs text-muted-foreground mt-4 sm:mt-0">
                             {t("登录即表示同意", "By logging in, you agree to our")}
-                            <a href="#" className="text-primary hover:underline ml-1">
-                                {t("用户协议", "Terms of Service")}
-                            </a>
+                            <span className="ml-1"><PrivacyPolicyDialog /></span>
                         </div>
                     </DialogFooter>
                 </DialogContent>

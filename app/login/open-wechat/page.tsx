@@ -1,11 +1,13 @@
 'use client'
-import { useEffect, useState } from 'react'
+export const dynamic = "force-dynamic";
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function OpenInWechatPage() {
+// 创建一个包含useSearchParams的内部组件
+function OpenInWechatContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [copied, setCopied] = useState(false);
@@ -86,5 +88,30 @@ export default function OpenInWechatPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+// 页面加载中显示的内容
+function OpenInWechatLoading() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle className="text-center text-2xl">加载中...</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center p-6">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+// 主页面组件，使用Suspense包裹使用useSearchParams的内容组件
+export default function OpenInWechatPage() {
+    return (
+        <Suspense fallback={<OpenInWechatLoading />}>
+            <OpenInWechatContent />
+        </Suspense>
     );
 } 

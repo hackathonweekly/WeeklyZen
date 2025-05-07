@@ -219,17 +219,43 @@ export default function MeditationPage() {
     const currentAudio = audioRef.current;
     const currentEndSound = endSoundRef.current;
     const currentAudioManager = audioManager.current;
+    const currentGuidanceAudio = guidanceAudio;
+    const currentCourseAudio = courseAudio;
 
     return () => {
+      console.log('[调试] 组件卸载，停止所有音频播放');
+
+      // 停止背景音效
       if (currentAudio) {
         currentAudio.pause();
       }
 
+      // 停止结束音效
       if (currentEndSound) {
         currentEndSound.pause();
       }
+
+      // 停止引导语音频
+      if (currentGuidanceAudio) {
+        currentGuidanceAudio.pause();
+      }
+
+      // 停止课程音频
+      if (currentCourseAudio) {
+        currentCourseAudio.pause();
+      }
+
+      // 停止音频管理器中的所有音频
+      if (currentAudioManager) {
+        currentAudioManager.stopAllSounds();
+      }
+
+      // 重置播放状态
+      setIsPlaying(false);
+      setIsPlayingEndSound(false);
+      hasPlayedCustomAudioRef.current = false;
     };
-  }, []);
+  }, [guidanceAudio, courseAudio]);
 
   // 处理音效选择
   const handleSoundSelect = (sound: SoundData | null) => {

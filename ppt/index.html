@@ -10,10 +10,13 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
+            background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
         }
         #sidebar {
             transition: transform 0.3s ease;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(148, 163, 184, 0.1);
         }
         #sidebar.hidden {
             transform: translateX(-100%);
@@ -25,30 +28,33 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.3);
+            background: rgba(59, 130, 246, 0.2);
             margin: 0 4px;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
         }
         .nav-dot.active {
-            background: white;
+            background: rgb(59, 130, 246);
+        }
+        .nav-dot:hover {
+            transform: scale(1.2);
         }
     </style>
 </head>
-<body class="bg-black text-white">
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50">
     <!-- 侧边栏 -->
-    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 p-4 z-50">
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 p-4 z-50 shadow-lg">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-xl font-bold">目录</h2>
-            <button id="toggleSidebar" class="text-white hover:text-gray-300">
+            <h2 class="text-xl font-bold text-blue-900">目录</h2>
+            <button id="toggleSidebar" class="text-blue-600 hover:text-blue-800">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <nav class="space-y-2">
-            <a href="intro.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="0">1. 项目介绍</a>
-            <a href="features.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="1">2. 核心功能</a>
-            <a href="ai.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="2">3. AI 创新</a>
-            <a href="demo.html" class="slide-link block p-2 hover:bg-gray-800 rounded" data-index="3">4. 产品演示</a>
+            <a href="intro.html" class="slide-link block p-2 text-blue-800 hover:bg-blue-50 rounded transition-colors" data-index="0">1. 项目介绍</a>
+            <a href="features.html" class="slide-link block p-2 text-blue-800 hover:bg-blue-50 rounded transition-colors" data-index="1">2. 核心功能</a>
+            <a href="ai.html" class="slide-link block p-2 text-blue-800 hover:bg-blue-50 rounded transition-colors" data-index="2">3. AI 创新</a>
+            <a href="demo.html" class="slide-link block p-2 text-blue-800 hover:bg-blue-50 rounded transition-colors" data-index="3">4. 产品演示</a>
         </nav>
     </div>
 
@@ -56,10 +62,10 @@
     <div id="mainContent" class="relative h-screen">
         <!-- 顶部控制栏 -->
         <div class="fixed top-4 left-4 z-50 flex items-center space-x-4">
-            <button id="menuBtn" class="text-white hover:text-gray-300">
+            <button id="menuBtn" class="text-blue-600 hover:text-blue-800 transition-colors">
                 <i class="fas fa-bars text-xl"></i>
             </button>
-            <button id="fullscreenBtn" class="text-white hover:text-gray-300">
+            <button id="fullscreenBtn" class="text-blue-600 hover:text-blue-800 transition-colors">
                 <i class="fas fa-expand text-xl"></i>
             </button>
         </div>
@@ -68,7 +74,7 @@
         <iframe id="slideFrame" src="intro.html" class="w-full h-full border-0"></iframe>
 
         <!-- 底部导航指示器 -->
-        <div class="fixed bottom-4 right-4 flex items-center bg-black bg-opacity-50 px-4 py-2 rounded-full">
+        <div class="fixed bottom-4 right-4 flex items-center bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
             <div id="navDots" class="flex space-x-2"></div>
         </div>
     </div>

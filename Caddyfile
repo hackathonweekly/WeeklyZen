@@ -1,0 +1,13 @@
+zen.01mvp.cn {
+	handle {
+		reverse_proxy * 127.0.0.1:3013
+	}
+}
+www.01mvp.cn {
+	redir https://01mvp.cn
+}
+01mvp.cn {
+	handle {
+		reverse_proxy * 127.0.0.1:3003
+	}
+}

@@ -342,6 +342,7 @@ export default function MeditationPage() {
   };
 
   // 显示鼓励语
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const showEncouragement = () => {
     // 更新冥想次数
     const newCount = meditationCount + 1;
@@ -780,7 +781,7 @@ export default function MeditationPage() {
     console.log('[调试] 点击创建专属引导语');
     handleGuidanceSelect(customGuidance);
     setShowGuidanceDialog(true);
-  }, [t]);
+  }, [handleGuidanceSelect]);
 
   // 添加接收customAudioUrl的回调函数
   const handleCustomAudioGenerated = useCallback((audioUrl: string | undefined) => {

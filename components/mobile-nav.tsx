@@ -124,9 +124,14 @@ export function MobileNav() {
                                     <p className="text-center text-muted-foreground">
                                         {t("登录以获取更多功能", "Login to access more features")}
                                     </p>
+                                    {/* 微信登录按钮暂时隐藏
                                     <WechatLogin
                                         onLoginSuccess={(userInfo) => setUser(userInfo)}
                                     />
+                                    */}
+                                    <p className="text-center text-xs text-muted-foreground">
+                                        {t("微信登录功能维护中", "WeChat login is under maintenance")}
+                                    </p>
                                 </div>
                             )}
                         </div>

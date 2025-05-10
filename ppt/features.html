@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核心功能 - WeeklyZen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .feature-card {
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 h-screen flex items-center justify-center p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl font-bold mb-12 text-center text-blue-900">
+            产品核心功能
+        </h1>
+
+        <div class="grid grid-cols-2 gap-8">
+            <!-- 多语言支持 -->
+            <div class="feature-card bg-white bg-opacity-70 backdrop-blur-sm p-6 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-start space-x-4">
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-language text-2xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-blue-900">多语言支持</h3>
+                        <ul class="space-y-2 text-slate-700">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                中英文无缝切换
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                本地化存储偏好设置
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 冥想引导 -->
+            <div class="feature-card bg-white bg-opacity-70 backdrop-blur-sm p-6 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-start space-x-4">
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-brain text-2xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-blue-900">智能冥想引导</h3>
+                        <ul class="space-y-2 text-slate-700">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                豆包 TTS 语音合成
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                个性化冥想课程
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主题系统 -->
+            <div class="feature-card bg-white bg-opacity-70 backdrop-blur-sm p-6 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-start space-x-4">
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-palette text-2xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-blue-900">主题系统</h3>
+                        <ul class="space-y-2 text-slate-700">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                亮暗主题切换
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                优化的夜间模式
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 冥想计时 -->
+            <div class="feature-card bg-white bg-opacity-70 backdrop-blur-sm p-6 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-start space-x-4">
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-2xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-blue-900">冥想计时</h3>
+                        <ul class="space-y-2 text-slate-700">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                自定义冥想时长
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-blue-500 mr-2"></i>
+                                背景音乐选择
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-slate-600">
+                基于 Next.js 15 (App Router) + Shadcn UI + Tailwind CSS 构建
+            </p>
+            <div class="flex justify-center space-x-4 mt-4">
+                <img src="https://img.shields.io/badge/Next.js-15-black" alt="Next.js" class="h-6">
+                <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC" alt="Tailwind" class="h-6">
+                <img src="https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white" alt="TypeScript" class="h-6">
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

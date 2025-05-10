@@ -6,9 +6,6 @@ interface UserInfo {
     nickname: string;
     avatar: string;
     openid: string;
-    isLoggedIn: boolean;
-    loginType?: string;
-    loginTime?: string;
 }
 
 interface UserContextType {
@@ -16,7 +13,6 @@ interface UserContextType {
     isLoading: boolean;
     setUser: (user: UserInfo | null) => void;
     logout: () => void;
-    fetchUserInfo: () => Promise<UserInfo | null>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -25,53 +21,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // 从服务端API获取用户信息
-    const fetchUserInfo = async (): Promise<UserInfo | null> => {
-        try {
-            const response = await fetch('/api/user');
-            const data = await response.json();
-
-            if (data.isLoggedIn) {
-                return data as UserInfo;
-            }
-            return null;
-        } catch (error) {
-            console.error('获取用户信息失败', error);
-            return null;
-        }
-    };
-
     useEffect(() => {
-        // 首次加载时，从服务端获取用户信息
-        const getUserData = async () => {
-            setIsLoading(true);
+        // 首次加载时，尝试从 localStorage 中恢复用户信息
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
             try {
-                const userData = await fetchUserInfo();
-                if (userData) {
-                    setUser(userData);
-                }
-            } catch (error) {
-                console.error('Failed to fetch user data', error);
-            } finally {
-                setIsLoading(false);
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error('Failed to parse stored user', e);
+                localStorage.removeItem('user');
             }
-        };
-
-        getUserData();
+        }
+        setIsLoading(false);
     }, []);
 
-    const logout = async () => {
-        try {
-            // 调用登出API
-            await fetch('/api/logout', { method: 'POST' });
-            setUser(null);
-        } catch (error) {
-            console.error('登出失败', error);
+    // 当用户状态变化时，更新 localStorage
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
         }
+    }, [user]);
+
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('user');
     };
 
     return (
-        <UserContext.Provider value={{ user, isLoading, setUser, logout, fetchUserInfo }}>
+        <UserContext.Provider value={{ user, isLoading, setUser, logout }}>
             {children}
         </UserContext.Provider>
     );

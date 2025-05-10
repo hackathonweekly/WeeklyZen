@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 启用输出跟踪以支持静态导出
-  output: 'standalone',
+  // 移除 standalone 输出，改为使用 export
+  // output: 'standalone',
   
   // 图像域名配置
   images: {

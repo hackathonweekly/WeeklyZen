@@ -54,6 +54,9 @@ import { BreathingSphere } from '@/components/breathing-sphere';
 import { MeditationHeader } from './MeditationHeader';
 import { MeditationEncouragement } from './MeditationEncouragement';
 
+// 添加音频事件处理器的类型定义
+type AudioEndHandler = (event: Event) => void;
+
 // 简单的翻译函数
 const t = (zh: string, en: string): string => {
   // 这里可以根据实际需求实现语言切换逻辑
@@ -79,6 +82,10 @@ export default function MeditationPage() {
 
   // 音频管理器
   const audioManager = useRef<AudioManager>(new AudioManager());
+
+  // 添加音频播放跟踪引用
+  const hasPlayedCustomAudioRef = useRef(false);
+  const handleAudioEndRef = useRef<AudioEndHandler | null>(null);
 
   // 状态管理
   const [selectedDuration, setSelectedDuration] = useState(5);
@@ -179,7 +186,8 @@ export default function MeditationPage() {
             // 如果倒计时结束，清除定时器并触发结束事件
             if (interval) clearInterval(interval);
             handleTimerEnd();
-            return 0;
+            // 不再返回0，这样在handleTimerEnd中会重置为选定的时长
+            return prev; // 修改这里，不返回0
           }
           return prev - 1;
         });
@@ -214,7 +222,50 @@ export default function MeditationPage() {
     }
   }, [showVolumeSlider]);
 
-  // 组件卸载时清理
+  // 修改播放自定义音频的 useEffect，保持逻辑简单
+  useEffect(() => {
+    // 只有当引导语音频存在、正在播放状态且是start.mp3时才设置监听
+    if (!guidanceAudio || !isPlaying) return;
+    if (!guidanceAudio.src.includes('start.mp3')) return;
+
+    console.log('[调试] 设置start.mp3播放结束事件监听');
+
+    // 创建一个简单的事件处理函数
+    const handleStartAudioEnd = () => {
+      // 只在有自定义音频URL并且是start.mp3播放完时处理
+      if (customAudioUrl && guidanceAudio.src.includes('start.mp3')) {
+        console.log('[调试] start.mp3播放结束，准备播放自定义音频:', customAudioUrl);
+
+        // 直接修改现有引导语音频的src，而不是创建新对象
+        guidanceAudio.src = customAudioUrl;
+        guidanceAudio.volume = isMuted ? 0 : volume / 100;
+        guidanceAudio.onended = null; // 移除事件，避免循环触发
+
+        // 立即播放，不使用setGuidanceAudio，避免状态更新
+        guidanceAudio.play().then(() => {
+          console.log('[调试] 自定义音频开始播放');
+        }).catch(error => {
+          console.error('[调试] 播放自定义音频失败:', error);
+          toast.error('播放自定义音频失败，请重试');
+        });
+      }
+    };
+
+    // 清除之前可能存在的事件监听
+    guidanceAudio.onended = null;
+    // 添加播放结束事件监听
+    guidanceAudio.addEventListener('ended', handleStartAudioEnd, { once: true });
+
+    // 清理函数
+    return () => {
+      if (guidanceAudio) {
+        // 移除事件监听，防止内存泄漏
+        guidanceAudio.removeEventListener('ended', handleStartAudioEnd);
+      }
+    };
+  }, [guidanceAudio, customAudioUrl, isPlaying, volume, isMuted]);
+
+  // 修改组件卸载时的清理逻辑
   useEffect(() => {
     const currentAudio = audioRef.current;
     const currentEndSound = endSoundRef.current;
@@ -237,6 +288,8 @@ export default function MeditationPage() {
 
       // 停止引导语音频
       if (currentGuidanceAudio) {
+        // 移除所有事件监听器，防止卸载后仍执行回调
+        currentGuidanceAudio.onended = null;
         currentGuidanceAudio.pause();
       }
 
@@ -276,6 +329,7 @@ export default function MeditationPage() {
   };
 
   // 处理引导语选择
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleGuidanceSelect = (guidance: GuidanceType) => {
     // 设置选中的引导语
     console.log('[调试] 选中引导语:', guidance.id, guidance.title);
@@ -598,7 +652,7 @@ export default function MeditationPage() {
     const endSound = async () => {
       try {
         // 加载并播放结束音效
-        const buffer = await audioManager.current.loadAudioBuffer('/sounds/temple-bells.mp3', 'end-sound');
+        const buffer = await audioManager.current.loadAudioBuffer('https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/bg/temple-bells.mp3', 'end-sound');
         audioManager.current.playSound(buffer, volume / 100, false);
 
         // 5秒后停止结束音效状态
@@ -610,7 +664,7 @@ export default function MeditationPage() {
         console.error('播放结束音效失败:', error);
         // 尝试使用备用方法播放
         if (endSoundRef.current) {
-          endSoundRef.current.src = '/sounds/temple-bells.mp3';
+          endSoundRef.current.src = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/bg/temple-bells.mp3';
           endSoundRef.current.volume = isMuted ? 0 : volume / 100;
           endSoundRef.current.play().catch(console.error);
 
@@ -632,7 +686,11 @@ export default function MeditationPage() {
     // 重置状态
     setIsPlaying(false);
     setShowGuidanceTextDialog(false);
-  }, [guidanceAudio, courseAudio, showEncouragement, volume, isMuted]);
+
+    // 添加：重置计时器为选定的时间，而不是保持为0
+    console.log('[调试] 冥想结束，重置计时器为:', selectedDuration, '分钟');
+    setTimeLeft(selectedDuration * 60);
+  }, [guidanceAudio, courseAudio, showEncouragement, volume, isMuted, selectedDuration]);
 
   // 处理时长选择
   const handleDurationSelect = (duration: number) => {
@@ -788,50 +846,6 @@ export default function MeditationPage() {
     console.log('[调试] 收到自定义引导语音频URL:', audioUrl);
     setCustomAudioUrl(audioUrl);
   }, []);
-
-  // 在组件顶部其他 state 声明附近添加
-  const hasPlayedCustomAudioRef = useRef(false);
-
-  // 修改播放自定义音频的 useEffect
-  useEffect(() => {
-    // 添加1秒延迟
-    setTimeout(() => {
-      if (!guidanceAudio) return;
-
-      const handleAudioEnd = () => {
-        // 只有当播放的是 start.mp3 且有自定义音频，且还没有播放过自定义音频时才继续
-        if (guidanceAudio.src.includes('start.mp3') && customAudioUrl && !hasPlayedCustomAudioRef.current) {
-          console.log('[调试] start.mp3 播放结束，准备播放自定义音频');
-          hasPlayedCustomAudioRef.current = true; // 标记已经播放过
-
-          const customAudio = new Audio(customAudioUrl);
-          customAudio.volume = isMuted ? 0 : volume / 100;
-
-          // 设置自定义音频播放完成后的处理
-          customAudio.addEventListener('ended', () => {
-            console.log('[调试] 自定义音频播放完成');
-            setGuidanceAudio(null);
-            // 不需要移除事件监听器，因为我们使用了 ref 来跟踪状态
-          });
-
-          // 播放自定义音频
-          setGuidanceAudio(customAudio);
-          customAudio.play().then(() => {
-            console.log('[调试] 自定义音频开始播放');
-          }).catch(error => {
-            console.error('[调试] 播放自定义音频失败:', error);
-            toast.error('播放自定义音频失败，请重试');
-          });
-        }
-      };
-
-      guidanceAudio.addEventListener('ended', handleAudioEnd);
-
-      return () => {
-        guidanceAudio.removeEventListener('ended', handleAudioEnd);
-      };
-    }, 1000); // 1秒延迟
-  }, [guidanceAudio, selectedGuidance, customAudioUrl, volume, isMuted]);
 
   // 添加 useEffect 来监听 customAudioUrl 的变化
   useEffect(() => {

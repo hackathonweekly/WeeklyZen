@@ -89,7 +89,7 @@ export function MeditationEncouragement({
                 </div>
 
                 <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-3">
-                    {onRestart && (
+                    {/* {onRestart && (
                         <Button
                             onClick={onRestart}
                             className={`w-full rounded-full py-6 ${isDarkTheme
@@ -100,7 +100,7 @@ export function MeditationEncouragement({
                             <RefreshCw className="mr-2 h-4 w-4" />
                             {t("再来一次", "Start Again")}
                         </Button>
-                    )}
+                    )} */}
                     <Button
                         onClick={onClose}
                         className={`w-full rounded-full py-6 ${isDarkTheme

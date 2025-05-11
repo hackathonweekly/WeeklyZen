@@ -607,7 +607,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             {/* 历史记录区域 */}
             {guidanceHistory.length > 0 && (
                 <div className="mt-6">
-                    <div
+                    {/* <div
                         className={`flex items-center gap-2 ${isDarkTheme ? 'text-indigo-300' : 'text-blue-600'} cursor-pointer mb-2`}
                         onClick={() => setShowHistory(!showHistory)}
                     >
@@ -616,7 +616,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                             <span>{t("历史记录", "History")}</span>
                             {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
-                    </div>
+                    </div> */}
 
                     {showHistory && (
                         <div className={`p-4 rounded-lg ${isDarkTheme ? 'bg-indigo-950/50 border border-indigo-900/70' : 'bg-blue-50 border border-blue-100'}`}>

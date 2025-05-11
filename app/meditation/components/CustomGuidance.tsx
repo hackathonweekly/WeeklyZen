@@ -15,6 +15,7 @@ interface GuidanceHistoryItem {
     timestamp: number;
     prompt: string;
     audioUrl: string;
+    isAudioExpired?: boolean;
 }
 
 interface CustomGuidanceProps {
@@ -50,7 +51,26 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             try {
                 const savedHistory = localStorage.getItem('guidanceHistory');
                 if (savedHistory) {
-                    setGuidanceHistory(JSON.parse(savedHistory));
+                    // 解析保存的历史记录
+                    const parsedHistory = JSON.parse(savedHistory);
+
+                    // 处理旧版本数据，为每条记录添加isAudioExpired字段并严格检查URL有效性
+                    const updatedHistory = parsedHistory.map((item: GuidanceHistoryItem) => {
+                        // 检查URL是否有效（不为空且格式正确）
+                        const isValidUrl = item.audioUrl &&
+                            item.audioUrl.trim() !== "" &&
+                            (item.audioUrl.startsWith('http://') ||
+                                item.audioUrl.startsWith('https://'));
+
+                        // 更新或设置isAudioExpired标记
+                        item.isAudioExpired = !isValidUrl;
+
+                        return item;
+                    });
+
+                    setGuidanceHistory(updatedHistory);
+                    console.log('[历史记录] 成功加载历史记录并处理旧版本数据，有效音频数:',
+                        updatedHistory.filter((i: GuidanceHistoryItem) => !i.isAudioExpired).length);
                 }
             } catch (e) {
                 console.error('Failed to load guidance history:', e);
@@ -63,13 +83,23 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
     }, []);
 
     // 保存历史记录
-    const saveToHistory = (prompt: string, audioUrl: string) => {
+    const saveToHistory = (prompt: string, audioUrl: string | null) => {
         try {
+            // 使用更严格的URL有效性检查
+            const isValidUrl = audioUrl &&
+                audioUrl.trim() !== "" &&
+                (audioUrl.startsWith('http://') ||
+                    audioUrl.startsWith('https://'));
+
+            // 如果音频URL无效，设置为过期状态
+            const isAudioExpired = !isValidUrl;
+
             const newItem: GuidanceHistoryItem = {
                 id: uuidv4(),
                 timestamp: Date.now(),
                 prompt,
-                audioUrl
+                audioUrl: audioUrl || "", // 存储空字符串而不是null
+                isAudioExpired // 添加过期标记
             };
 
             // 创建新历史数组
@@ -81,7 +111,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             // 保存到localStorage
             localStorage.setItem('guidanceHistory', JSON.stringify(updatedHistory));
 
-            console.log('[历史记录] 已保存新引导语到历史记录');
+            console.log('[历史记录] 已保存新引导语到历史记录', isAudioExpired ? '(标记为音频过期)' : '');
         } catch (e) {
             console.error('Failed to save to guidance history:', e);
             // 错误处理 - 可以显示toast或简单忽略
@@ -96,6 +126,14 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
 
     // 处理历史记录选择
     const handleHistorySelect = (item: GuidanceHistoryItem) => {
+        // 检查音频是否过期
+        if (item.isAudioExpired || !item.audioUrl) {
+            toast.error(t("音频已过期", "Audio has expired"), {
+                description: t("此引导语的音频已不可用，请重新生成", "This guidance audio is no longer available, please regenerate")
+            });
+            return; // 阻止选择过期的音频
+        }
+
         if (onCustomAudioGenerated) {
             console.log('[历史记录] 选择历史音频:', item.audioUrl);
             onCustomAudioGenerated(item.audioUrl);
@@ -202,19 +240,17 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 ? `测试引导语 - ${timestamp}`
                 : `${userInput} (${timestamp})`;
 
-            // 先使用默认音频URL，确保一定会有记录保存
-            const defaultAudioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
-
             // 立即保存到历史记录，不等待音频生成
             console.log("[历史记录] 立即保存引导语到历史记录，时间:", timestamp);
-            saveToHistory(historyPrompt, defaultAudioUrl);
+            saveToHistory(historyPrompt, null);
 
             // 尝试调用豆包 TTS API 生成音频
             try {
                 if (isTestMode) {
                     // 测试模式使用预设的音频URL
                     console.log("[引导语生成] 测试模式：使用预设音频URL");
-                    audioUrl = defaultAudioUrl; // 使用前面定义的默认URL
+                    // 使用有效的测试音频URL
+                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
                 } else {
                     // 正常模式调用API生成音频
                     console.log("[引导语生成] 开始调用豆包 TTS API");
@@ -228,7 +264,10 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                         console.log("[历史记录] 更新历史记录中的音频URL");
                         saveToHistory(historyPrompt, generatedAudioUrl);
                     } else {
-                        audioUrl = defaultAudioUrl; // 如果没有生成新URL，使用默认URL
+                        // 如果没有生成新URL，标记为过期
+                        console.log("[引导语生成] 音频URL生成失败，标记为过期");
+                        audioUrl = null;
+                        saveToHistory(historyPrompt, null);
                     }
                 }
             } catch (e) {
@@ -236,13 +275,18 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
                 audioError = true;
                 audioErrorMessage = error.message || "Unknown error";
-                audioUrl = defaultAudioUrl; // 发生错误时使用默认URL
+                // 更新历史记录，标记音频已过期
+                console.log("[历史记录] 更新历史记录，标记音频已过期");
+                saveToHistory(historyPrompt, null);
+                audioUrl = null; // 设置为null，表示没有可用音频
             }
 
             // 回调 - 添加非空检查
             if (onCustomAudioGenerated) {
-                console.log("[引导语生成] 调用onCustomAudioGenerated，传递音频URL:", audioUrl);
-                onCustomAudioGenerated(audioUrl);
+                // 如果audioUrl为null，转换为undefined
+                const audioUrlForCallback = audioUrl === null ? undefined : audioUrl;
+                console.log("[引导语生成] 调用onCustomAudioGenerated，传递音频URL:", audioUrlForCallback || "undefined");
+                onCustomAudioGenerated(audioUrlForCallback);
             } else {
                 console.log("[引导语生成] onCustomAudioGenerated未定义，跳过回调");
             }
@@ -587,28 +631,42 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                         ) : (
                             <div className="max-h-[300px] overflow-y-auto">
                                 {guidanceHistory.map((item, index) => (
-                                    <div key={item.id} className={`p-3 flex flex-col ${index !== guidanceHistory.length - 1
-                                        ? isDarkTheme
-                                            ? 'border-b border-indigo-800/50'
-                                            : 'border-b border-blue-200'
-                                        : ''}`}>
+                                    <div key={item.id} className={`p-3 flex flex-col ${
+                                        // 添加条件类名，使过期项目变灰
+                                        item.isAudioExpired ? (isDarkTheme ? 'opacity-50' : 'opacity-60') : ''
+                                        } ${index !== guidanceHistory.length - 1
+                                            ? isDarkTheme
+                                                ? 'border-b border-indigo-800/50'
+                                                : 'border-b border-blue-200'
+                                            : ''
+                                        }`}>
                                         <div className="flex justify-between items-start mb-1">
                                             <span className={`text-xs ${isDarkTheme
                                                 ? 'text-indigo-400'
                                                 : 'text-blue-600'}`}>
                                                 {formatTimestamp(item.timestamp)}
                                             </span>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => handleHistorySelect(item)}
-                                                className={`h-7 px-2 ${isDarkTheme
-                                                    ? 'hover:bg-indigo-800/70 text-indigo-300'
-                                                    : 'hover:bg-blue-100 text-blue-600'}`}
-                                            >
-                                                <Play className="h-3 w-3 mr-1" />
-                                                {t("播放", "Play")}
-                                            </Button>
+                                            {item.isAudioExpired || !item.audioUrl ? (
+                                                // 显示过期标记，改进样式使其更明显
+                                                <span className={`text-xs px-2 py-1 rounded ${isDarkTheme
+                                                    ? 'bg-red-900/30 text-red-300'
+                                                    : 'bg-red-100 text-red-600'}`}>
+                                                    {t("音频已过期", "Audio expired")}
+                                                </span>
+                                            ) : (
+                                                // 显示播放按钮
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleHistorySelect(item)}
+                                                    className={`h-7 px-2 ${isDarkTheme
+                                                        ? 'hover:bg-indigo-800/70 text-indigo-300'
+                                                        : 'hover:bg-blue-100 text-blue-600'}`}
+                                                >
+                                                    <Play className="h-3 w-3 mr-1" />
+                                                    {t("播放", "Play")}
+                                                </Button>
+                                            )}
                                         </div>
                                         <p className={`text-sm line-clamp-2 ${isDarkTheme
                                             ? 'text-indigo-200'

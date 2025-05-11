@@ -605,83 +605,74 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             </div>
 
             {/* 历史记录区域 */}
-            {
-                showHistory && (
-                    <div className={`mt-4 rounded-lg border ${isDarkTheme
-                        ? 'border-indigo-800 bg-indigo-900/30'
-                        : 'border-blue-200 bg-blue-50'}`}>
-                        <div className={`p-3 border-b ${isDarkTheme
-                            ? 'border-indigo-800 bg-indigo-800/50 text-indigo-200'
-                            : 'border-blue-200 bg-blue-100 text-blue-700'} flex items-center`}>
-                            <Clock className="h-4 w-4 mr-2" />
-                            <span className="font-medium">
-                                {t("历史引导语", "History Guidance")}
-                            </span>
-                            <span className="text-xs ml-2 opacity-70">
-                                ({guidanceHistory.length}/10)
-                            </span>
+            {guidanceHistory.length > 0 && (
+                <div className="mt-6">
+                    <div
+                        className={`flex items-center gap-2 ${isDarkTheme ? 'text-indigo-300' : 'text-blue-600'} cursor-pointer mb-2`}
+                        onClick={() => setShowHistory(!showHistory)}
+                    >
+                        <History size={16} />
+                        <div className="flex items-center gap-1">
+                            <span>{t("历史记录", "History")}</span>
+                            {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
+                    </div>
 
-                        {guidanceHistory.length === 0 ? (
-                            <div className={`p-6 text-center ${isDarkTheme
-                                ? 'text-indigo-400'
-                                : 'text-blue-500'}`}>
-                                {t("暂无历史记录", "No history records yet")}
-                            </div>
-                        ) : (
-                            <div className="max-h-[300px] overflow-y-auto">
-                                {guidanceHistory.map((item, index) => (
-                                    <div key={item.id} className={`p-3 flex flex-col ${
-                                        // 添加条件类名，使过期项目变灰
-                                        item.isAudioExpired ? (isDarkTheme ? 'opacity-50' : 'opacity-60') : ''
-                                        } ${index !== guidanceHistory.length - 1
+                    {showHistory && (
+                        <div className={`p-4 rounded-lg ${isDarkTheme ? 'bg-indigo-950/50 border border-indigo-900/70' : 'bg-blue-50 border border-blue-100'}`}>
+                            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-2">
+                                {guidanceHistory.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${item.isAudioExpired
                                             ? isDarkTheme
-                                                ? 'border-b border-indigo-800/50'
-                                                : 'border-b border-blue-200'
-                                            : ''
-                                        }`}>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-xs ${isDarkTheme
-                                                ? 'text-indigo-400'
-                                                : 'text-blue-600'}`}>
+                                                ? 'bg-gray-800/60 border-gray-700 opacity-60'
+                                                : 'bg-gray-100 border-gray-200 opacity-70'
+                                            : isDarkTheme
+                                                ? 'bg-indigo-900/40 border border-indigo-800/80 hover:bg-indigo-900/60'
+                                                : 'bg-white border border-blue-100 hover:bg-blue-50'
+                                            }`}
+                                        onClick={() => handleHistorySelect(item)}
+                                    >
+                                        <div className="flex justify-between">
+                                            <div className={`text-xs ${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'}`}>
                                                 {formatTimestamp(item.timestamp)}
-                                            </span>
-                                            {item.isAudioExpired || !item.audioUrl ? (
-                                                // 显示过期标记，改进样式使其更明显
-                                                <span className={`text-xs px-2 py-1 rounded ${isDarkTheme
-                                                    ? 'bg-red-900/30 text-red-300'
-                                                    : 'bg-red-100 text-red-600'}`}>
+                                            </div>
+                                            {item.isAudioExpired && (
+                                                <div className={`text-xs px-1.5 py-0.5 rounded ${isDarkTheme
+                                                    ? 'bg-red-950 text-red-300 border border-red-800/50'
+                                                    : 'bg-red-50 text-red-600 border border-red-200'
+                                                    }`}>
                                                     {t("音频已过期", "Audio expired")}
-                                                </span>
-                                            ) : (
-                                                // 显示播放按钮
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleHistorySelect(item)}
-                                                    className={`h-7 px-2 ${isDarkTheme
-                                                        ? 'hover:bg-indigo-800/70 text-indigo-300'
-                                                        : 'hover:bg-blue-100 text-blue-600'}`}
-                                                >
-                                                    <Play className="h-3 w-3 mr-1" />
-                                                    {t("播放", "Play")}
-                                                </Button>
+                                                </div>
                                             )}
                                         </div>
-                                        <p className={`text-sm line-clamp-2 ${isDarkTheme
-                                            ? 'text-indigo-200'
-                                            : 'text-blue-800'}`}>
-                                            {item.prompt.length > 30
-                                                ? item.prompt.substring(0, 30) + '...'
-                                                : item.prompt}
-                                        </p>
+                                        <div className={`mt-1 text-sm line-clamp-2 ${item.isAudioExpired
+                                            ? isDarkTheme ? 'text-gray-400' : 'text-gray-500'
+                                            : isDarkTheme ? 'text-indigo-200' : 'text-slate-700'
+                                            }`}>
+                                            {item.prompt}
+                                        </div>
+                                        <div className="mt-2 flex justify-between items-center">
+                                            <div className={`flex items-center gap-1 text-xs ${item.isAudioExpired
+                                                ? isDarkTheme ? 'text-gray-500' : 'text-gray-500'
+                                                : isDarkTheme ? 'text-indigo-400' : 'text-blue-500'
+                                                }`}>
+                                                {!item.isAudioExpired && <Play size={14} />}
+                                                <span>
+                                                    {item.isAudioExpired
+                                                        ? t("无法播放", "Cannot play")
+                                                        : t("点击播放", "Click to play")}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                )
-            }
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 } 

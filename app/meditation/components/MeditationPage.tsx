@@ -175,9 +175,16 @@ export default function MeditationPage() {
     };
   }, []);
 
-  // 更新倒计时
+  // 修改倒计时useEffect，优化检测逻辑
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
+
+    // 确保timeLeft不为异常值
+    if (timeLeft <= 0 && !isPlayingEndSound) {
+      console.log('[调试] 纠正异常timeLeft值，设置为', selectedDuration * 60, '秒');
+      setTimeLeft(selectedDuration * 60);
+      return; // 提前返回，避免设置计时器
+    }
 
     if (isPlaying && timeLeft > 0) {
       interval = setInterval(() => {
@@ -186,8 +193,8 @@ export default function MeditationPage() {
             // 如果倒计时结束，清除定时器并触发结束事件
             if (interval) clearInterval(interval);
             handleTimerEnd();
-            // 不再返回0，这样在handleTimerEnd中会重置为选定的时长
-            return prev; // 修改这里，不返回0
+            // 这里关键是不要返回0，而是让handleTimerEnd负责设置新值
+            return 1; // 保持最小值为1，避免显示为0
           }
           return prev - 1;
         });
@@ -200,7 +207,7 @@ export default function MeditationPage() {
       if (interval) clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, timeLeft]);
+  }, [isPlaying, timeLeft, isPlayingEndSound, selectedDuration]);
 
   // 点击外部关闭音量滑块
   useEffect(() => {
@@ -395,16 +402,41 @@ export default function MeditationPage() {
     }
   };
 
-  // 显示鼓励语
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // 显示鼓励对话框
   const showEncouragement = () => {
-    // 更新冥想次数
+    console.log('[调试] 显示鼓励对话框');
+    // 增加冥想次数
     const newCount = meditationCount + 1;
     setMeditationCount(newCount);
+    // 保存到localStorage
     localStorage.setItem('meditationCount', newCount.toString());
 
-    // 显示鼓励对话框
     setIsShowingEncouragement(true);
+  };
+
+  // 处理鼓励对话框关闭
+  const handleEncouragementClose = () => {
+    console.log('[调试] 关闭鼓励对话框');
+    setIsShowingEncouragement(false);
+  };
+
+  // 处理鼓励对话框中的"再来一次"按钮点击
+  const handleRestartMeditation = () => {
+    console.log('[调试] 鼓励对话框中点击"再来一次"按钮');
+    // 关闭对话框
+    setIsShowingEncouragement(false);
+
+    // 使用setTimeout确保状态更新后再重置冥想
+    setTimeout(() => {
+      // 重置冥想
+      resetMeditation();
+
+      // 短暂延迟后自动开始新的冥想
+      setTimeout(() => {
+        console.log('[调试] 自动开始新的冥想');
+        togglePlayPause();
+      }, 500);
+    }, 100);
   };
 
   // 处理课程选择
@@ -525,22 +557,24 @@ export default function MeditationPage() {
           guidanceAudio.onended = null;
 
           // 添加音频播放结束事件
-          guidanceAudio.onended = () => {
+          guidanceAudio.onended = function () {
             console.log('[调试] 引导语音频播放结束，开始播放自定义音频');
 
-            // 创建新的音频元素播放自定义音频
-            const customAudio = new Audio(customAudioUrl);
-            customAudio.volume = isMuted ? 0 : volume / 100;
+            // 直接修改现有引导语音频的src，而不是创建新对象
+            // 这样可以保持原有的音频控制逻辑不变
+            if (guidanceAudio) {
+              guidanceAudio.src = customAudioUrl;
+              guidanceAudio.volume = isMuted ? 0 : volume / 100;
 
-            // 播放自定义音频
-            // customAudio.play().then(() => {
-            //   console.log('[调试] 自定义音频开始播放成功');
-            //   // 保存引用以便于后续控制
-            //   setGuidanceAudio(customAudio);
-            // }).catch(error => {
-            //   console.error('[调试] 播放自定义音频失败:', error);
-            //   toast.error('播放自定义音频失败，请重试');
-            // });
+              // 播放自定义音频
+              guidanceAudio.play().then(() => {
+                console.log('[调试] 自定义音频开始播放成功');
+                hasPlayedCustomAudioRef.current = true;
+              }).catch(error => {
+                console.error('[调试] 播放自定义音频失败:', error);
+                toast.error('播放自定义音频失败，请重试');
+              });
+            }
           };
         }
 
@@ -585,11 +619,7 @@ export default function MeditationPage() {
     // 重置播放标记
     hasPlayedCustomAudioRef.current = false;
 
-    // 重置时间到选择的时长
-    setTimeLeft(selectedDuration * 60);
-    console.log('[调试] 重置计时器到', selectedDuration, '分钟');
-
-    // 确保不在播放状态
+    // 确保不在播放状态 - 先停止播放，再重置时间
     setIsPlaying(false);
     setIsPlayingEndSound(false);
 
@@ -632,12 +662,25 @@ export default function MeditationPage() {
       courseAudio.pause();
     }
 
+    // 重置时间到选择的时长 - 在所有音频停止后
+    const newDurationInSeconds = selectedDuration * 60;
+    console.log('[调试] 重置计时器到', selectedDuration, '分钟 (', newDurationInSeconds, '秒)');
+    setTimeLeft(newDurationInSeconds);
+
+    // 使用setTimeout确保时间重置被正确应用
+    setTimeout(() => {
+      if (timeLeft <= 1 || timeLeft !== newDurationInSeconds) {
+        console.log('[调试] 延迟检查 - 纠正计时器值到', newDurationInSeconds, '秒');
+        setTimeLeft(newDurationInSeconds);
+      }
+    }, 100);
+
     console.log('[调试] 冥想重置完成');
   };
 
-  // 使用useCallback包装handleTimerEnd函数
+  // 修改handleTimerEnd函数
   const handleTimerEnd = useCallback(() => {
-    // 停止所有音频
+    // 停止所有音频 - 先停止音频，再修改状态
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -648,49 +691,141 @@ export default function MeditationPage() {
       courseAudio.pause();
     }
 
-    // 播放结束音效
-    const endSound = async () => {
-      try {
-        // 加载并播放结束音效
-        const buffer = await audioManager.current.loadAudioBuffer('https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/bg/temple-bells.mp3', 'end-sound');
-        audioManager.current.playSound(buffer, volume / 100, false);
+    // 设置播放结束音效状态
+    setIsPlayingEndSound(true);
+    setIsPlaying(false);
+    setShowGuidanceTextDialog(false);
 
-        // 5秒后停止结束音效状态
-        setTimeout(() => {
-          setIsPlayingEndSound(false);
-          audioManager.current.stopAllSounds();
-        }, 5000);
-      } catch (error) {
-        console.error('播放结束音效失败:', error);
-        // 尝试使用备用方法播放
-        if (endSoundRef.current) {
-          endSoundRef.current.src = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/bg/temple-bells.mp3';
-          endSoundRef.current.volume = isMuted ? 0 : volume / 100;
-          endSoundRef.current.play().catch(console.error);
+    // 计算新的计时器值
+    const newTimeValue = selectedDuration * 60;
+    console.log('[调试] 计时结束，重置计时器到', selectedDuration, '分钟 (', newTimeValue, '秒)');
 
-          // 音频播放结束后重置状态
-          endSoundRef.current.onended = () => {
-            setIsPlayingEndSound(false);
-          };
-        } else {
-          setIsPlayingEndSound(false);
-        }
+    // 重置计时器到选定的时长
+    setTimeLeft(newTimeValue);
+
+    // 播放结束音效 - 增强版本
+    const playEndSound = async () => {
+      const endSoundUrl = 'https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/bg/temple-bells.mp3';
+      console.log('[调试] 尝试播放结束音效:', endSoundUrl);
+
+      // 创建结束音效的音频对象（如果不存在）
+      if (!endSoundRef.current) {
+        endSoundRef.current = new Audio();
       }
+
+      let playAttempts = 0;
+      const maxAttempts = 3;
+
+      const attemptPlaySound = async () => {
+        try {
+          // 首选方式：使用AudioManager播放
+          try {
+            const buffer = await audioManager.current.loadAudioBuffer(endSoundUrl, 'end-sound');
+            audioManager.current.playSound(buffer, volume / 100, false);
+            console.log('[调试] 成功使用AudioManager播放结束音效');
+            return true;
+          } catch (error) {
+            console.warn('[调试] AudioManager播放失败，尝试备用方式:', error);
+            throw error; // 让外层catch处理
+          }
+        } catch (error) {
+          // 备用方式：使用Audio元素播放
+          try {
+            if (endSoundRef.current) {
+              endSoundRef.current.src = endSoundUrl;
+              endSoundRef.current.volume = isMuted ? 0 : volume / 100;
+
+              // 确保音频加载完成
+              endSoundRef.current.oncanplaythrough = async () => {
+                try {
+                  await endSoundRef.current?.play();
+                  console.log('[调试] 成功使用备用Audio元素播放结束音效');
+                  return true;
+                } catch (playError) {
+                  console.error('[调试] 备用播放方式也失败:', playError);
+                  return false;
+                }
+              };
+
+              // 设置超时，避免oncanplaythrough不触发
+              setTimeout(() => {
+                if (endSoundRef.current && endSoundRef.current.paused) {
+                  endSoundRef.current.play().catch(e => console.error('[调试] 超时后尝试播放失败:', e));
+                }
+              }, 1000);
+
+              return new Promise(resolve => {
+                endSoundRef.current!.onended = () => resolve(true);
+                endSoundRef.current!.onerror = () => resolve(false);
+                // 如果10秒后还没有播放完成，也认为成功（避免卡死）
+                setTimeout(() => resolve(true), 10000);
+              });
+            }
+            return false;
+          } catch (error2) {
+            console.error('[调试] 所有播放方式都失败:', error2);
+            return false;
+          }
+        }
+      };
+
+      // 尝试播放，如果失败则重试
+      while (playAttempts < maxAttempts) {
+        const success = await attemptPlaySound();
+        if (success) break;
+        playAttempts++;
+        console.log(`[调试] 播放尝试 ${playAttempts}/${maxAttempts} 失败，${playAttempts < maxAttempts ? '正在重试...' : '已达到最大重试次数'}`);
+        // 重试前等待短暂时间
+        if (playAttempts < maxAttempts) await new Promise(r => setTimeout(r, 500));
+      }
+
+      // 无论播放成功与否，5秒后重置状态
+      setTimeout(() => {
+        setIsPlayingEndSound(false);
+        audioManager.current.stopAllSounds();
+
+        // 如果有Audio元素正在播放，也停止它
+        if (endSoundRef.current && !endSoundRef.current.paused) {
+          endSoundRef.current.pause();
+          endSoundRef.current.currentTime = 0;
+        }
+
+        // 再次确认计时器已重置 - 防止任何意外
+        if (timeLeft <= 1 || timeLeft !== newTimeValue) {
+          console.log('[调试] 结束音效播放完毕，确认计时器已重置');
+          setTimeLeft(newTimeValue);
+        }
+      }, 5000);
     };
 
-    endSound();
+    // 立即执行播放
+    playEndSound();
 
     // 显示鼓励信息
     showEncouragement();
 
-    // 重置状态
-    setIsPlaying(false);
-    setShowGuidanceTextDialog(false);
+    // 重置引导语音频，准备下一次播放
+    if (guidanceAudio && selectedGuidance?.audioUrl) {
+      // 创建新的音频实例以重置播放位置
+      console.log('[调试] 重置引导语音频，准备下一次播放');
+      const audio = new Audio(selectedGuidance.audioUrl);
+      audio.volume = isMuted ? 0 : volume / 100;
+      setGuidanceAudio(audio);
+    }
 
-    // 添加：重置计时器为选定的时间，而不是保持为0
-    console.log('[调试] 冥想结束，重置计时器为:', selectedDuration, '分钟');
-    setTimeLeft(selectedDuration * 60);
-  }, [guidanceAudio, courseAudio, showEncouragement, volume, isMuted, selectedDuration]);
+    // 使用多个setTimeout带不同延迟确保计时器值被正确应用
+    const checkAndFixTimer = () => {
+      if (timeLeft <= 1 || timeLeft !== newTimeValue) {
+        console.log('[调试] 延迟检查 - 确保计时器已重置为', newTimeValue, '秒');
+        setTimeLeft(newTimeValue);
+      }
+    };
+
+    setTimeout(checkAndFixTimer, 50);
+    setTimeout(checkAndFixTimer, 500);
+    setTimeout(checkAndFixTimer, 1000);
+
+  }, [guidanceAudio, courseAudio, showEncouragement, volume, isMuted, selectedDuration, selectedGuidance, timeLeft]);
 
   // 处理时长选择
   const handleDurationSelect = (duration: number) => {
@@ -966,7 +1101,8 @@ export default function MeditationPage() {
         isDarkTheme={isDarkTheme}
         showEncouragement={isShowingEncouragement}
         selectedDuration={selectedDuration}
-        onClose={() => setIsShowingEncouragement(false)}
+        onClose={handleEncouragementClose}
+        onRestart={handleRestartMeditation}
         t={t}
       />
 

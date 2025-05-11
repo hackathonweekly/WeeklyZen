@@ -8,13 +8,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, RefreshCw } from 'lucide-react';
 
 interface MeditationEncouragementProps {
     isDarkTheme: boolean;
     showEncouragement: boolean;
     selectedDuration: number;
     onClose: () => void;
+    onRestart?: () => void;
     t: (zh: string, en: string) => string;
 }
 
@@ -23,6 +24,7 @@ export function MeditationEncouragement({
     showEncouragement,
     selectedDuration,
     onClose,
+    onRestart,
     t
 }: MeditationEncouragementProps) {
     const [encouragementText, setEncouragementText] = useState('');
@@ -86,7 +88,19 @@ export function MeditationEncouragement({
                     {encouragementText}
                 </div>
 
-                <DialogFooter className="mt-6">
+                <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-3">
+                    {onRestart && (
+                        <Button
+                            onClick={onRestart}
+                            className={`w-full rounded-full py-6 ${isDarkTheme
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border border-emerald-500/30'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border border-emerald-400/30'} 
+                                shadow-md shadow-emerald-900/20 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-900/30`}
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            {t("再来一次", "Start Again")}
+                        </Button>
+                    )}
                     <Button
                         onClick={onClose}
                         className={`w-full rounded-full py-6 ${isDarkTheme

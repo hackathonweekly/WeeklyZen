@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
+    // 处理跨域请求，允许所有来源访问
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
+    // 处理预检请求（OPTIONS请求）
+    if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders, status: 204 });
+    }
+
     try {
         // 解析请求参数
         const { text, isTest } = await request.json();
@@ -58,6 +70,8 @@ export async function POST(request: Request) {
                 speed_ratio: 0.74,
                 volume_ratio: 1.2,
                 pitch_ratio: 0.68,
+                sample_rate: 22050,
+                bitrate: 64,
             },
             request: {
                 reqid: uuidv4(),
@@ -221,13 +235,24 @@ export async function POST(request: Request) {
 
         console.log('[豆包TTS API] 成功提取音频数据，长度:', audioData.length);
 
+        // 检查生成的音频大小
+        const audioSize = audioData.length;
+        const sizeInMB = (audioSize / (1024 * 1024)).toFixed(2);
+
+        // 如果生成的音频大于3MB，记录警告
+        if (audioSize > 3 * 1024 * 1024) {
+            console.warn(`[豆包TTS API] 警告：生成的音频数据较大 (${sizeInMB}MB)`);
+        }
+
         // 在返回前添加详细日志
         console.log('[豆包TTS API] 返回audioUrl，长度:', `data:audio/mp3;base64,${audioData}`.length);
         console.log('[豆包TTS API] audioUrl前100字符:', `data:audio/mp3;base64,${audioData}`.substring(0, 100));
 
         // 返回音频URL（data URI格式）
         return NextResponse.json({
-            audioUrl: `data:audio/mp3;base64,${audioData}`
+            audioUrl: `data:audio/mp3;base64,${audioData}`,
+            size: audioSize,
+            sizeInMB
         });
 
     } catch (e) {

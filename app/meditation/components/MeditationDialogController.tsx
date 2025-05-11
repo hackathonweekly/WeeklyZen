@@ -213,8 +213,7 @@ const MeditationDialogController: React.FC<MeditationDialogControllerProps> = ({
                             t={t}
                             onCloseDialog={() => setShowGuidanceDialog(false)}
                             onPlay={onPlay}
-                            onCustomAudioGenerated={onCustomAudioGenerated}
-                        />
+                            onCustomAudioGenerated={onCustomAudioGenerated} guidanceHistory={[]} showHistory={false} />
                     </div>
                 </DialogContent>
             </Dialog>

@@ -784,7 +784,7 @@ export default function MeditationPage() {
           guidanceAudio.src.includes('start.mp3')) &&
           customAudioUrl) {
 
-          console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频:', customAudioUrl);
+          console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频');
 
           // 移除之前可能存在的ended事件监听器
           guidanceAudio.onended = null;
@@ -1091,7 +1091,7 @@ export default function MeditationPage() {
         guidanceAudio.src.includes('start.mp3') ||
         (selectedGuidance?.audioUrl && selectedGuidance.audioUrl.includes('start.mp3')))) {
 
-        console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频:', customAudioUrl);
+        console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频');
 
         // 添加新的ended事件处理器
         guidanceAudio.onended = function () {
@@ -1284,8 +1284,7 @@ export default function MeditationPage() {
               t={t}
               onCloseDialog={() => setShowGuidanceDialog(false)}
               onPlay={togglePlayPause}
-              onCustomAudioGenerated={handleCustomAudioGenerated}
-            />
+              onCustomAudioGenerated={handleCustomAudioGenerated} guidanceHistory={[]} showHistory={false} />
           </div>
         </DialogContent>
       </Dialog>

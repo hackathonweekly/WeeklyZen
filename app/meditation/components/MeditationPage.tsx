@@ -104,6 +104,19 @@ export default function MeditationPage() {
   // 添加自定义引导语音频URL状态
   const [customAudioUrl, setCustomAudioUrl] = useState<string | undefined>(undefined);
 
+  // 从localStorage恢复自定义音频URL
+  useEffect(() => {
+    try {
+      const savedAudioUrl = localStorage.getItem('customAudioUrl');
+      if (savedAudioUrl) {
+        console.log('[调试] 从localStorage恢复自定义音频URL:', savedAudioUrl);
+        setCustomAudioUrl(savedAudioUrl);
+      }
+    } catch (e) {
+      console.error('[调试] 恢复自定义音频URL失败:', e);
+    }
+  }, []);
+
   // 潮汐冥想课程相关
   const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
   const [courseAudio, setCourseAudio] = useState<HTMLAudioElement | null>(null);
@@ -502,13 +515,6 @@ export default function MeditationPage() {
         // 添加引导语结束后的处理函数
         audio.onended = () => {
           console.log('[调试] 新的引导语音频播放结束，开始播放自定义音频');
-
-          // 如果已经播放过自定义音频，不再重复播放
-          if (hasPlayedCustomAudioRef.current) {
-            console.log('[调试] 自定义音频已经播放过，不再重复播放');
-            return;
-          }
-
           if (customAudioUrl) {
             // 直接修改现有引导语音频的src，而不是创建新对象
             if (guidanceAudio) {
@@ -778,23 +784,14 @@ export default function MeditationPage() {
           guidanceAudio.src.includes('start.mp3')) &&
           customAudioUrl) {
 
-          console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频:', customAudioUrl);
+          console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频');
 
           // 移除之前可能存在的ended事件监听器
           guidanceAudio.onended = null;
 
-          // 重置播放状态标记
-          hasPlayedCustomAudioRef.current = false;
-
           // 添加音频播放结束事件
           guidanceAudio.onended = function () {
             console.log('[调试] 引导语音频播放结束，开始播放自定义音频');
-
-            // 如果已经播放过自定义音频，不再重复播放
-            if (hasPlayedCustomAudioRef.current) {
-              console.log('[调试] 自定义音频已经播放过，不再重复播放');
-              return;
-            }
 
             // 直接修改现有引导语音频的src，而不是创建新对象
             // 这样可以保持原有的音频控制逻辑不变
@@ -1057,7 +1054,7 @@ export default function MeditationPage() {
 
   // 添加接收customAudioUrl的回调函数
   const handleCustomAudioGenerated = useCallback((audioUrl: string | undefined) => {
-    console.log('[调试] 收到自定义引导语音频URL:', audioUrl ? `长度: ${audioUrl.length}` : 'undefined');
+    console.log('[调试] 收到自定义引导语音频URL:', audioUrl);
 
     // 重置播放状态
     hasPlayedCustomAudioRef.current = false;
@@ -1065,14 +1062,65 @@ export default function MeditationPage() {
     // 更新URL
     setCustomAudioUrl(audioUrl);
 
-    // 如果音频URL过长，提示用户音频仅在当前会话有效
-    if (audioUrl && audioUrl.length > 10000) {
-      console.log('[调试] 自定义音频URL长度超过限制，长度:', audioUrl.length);
-      toast.info(t('音频仅在本次会话有效', 'Audio valid only for current session'), {
-        description: t('由于浏览器存储限制，自定义音频将不会在页面刷新后保留', 'Due to browser storage limitations, custom audio will not persist after page refresh')
-      });
+    // 如果收到的是undefined，清除localStorage中保存的URL
+    if (!audioUrl) {
+      console.log('[调试] 清除localStorage中的自定义音频URL');
+      localStorage.removeItem('customAudioUrl');
     }
   }, []);
+
+  // 添加 useEffect 来监听 customAudioUrl 的变化
+  useEffect(() => {
+    console.log('[调试] customAudioUrl 已更新:', customAudioUrl);
+
+    // 保存到localStorage以便页面刷新后恢复
+    if (customAudioUrl) {
+      console.log('[调试] 保存自定义音频URL到localStorage');
+      localStorage.setItem('customAudioUrl', customAudioUrl);
+    }
+
+    // 仅当customAudioUrl存在且有引导语音频时执行
+    if (customAudioUrl && guidanceAudio) {
+      console.log('[调试] 检测到customAudioUrl和guidanceAudio都存在，设置播放逻辑');
+
+      // 移除之前可能存在的ended事件处理器
+      guidanceAudio.onended = null;
+
+      // 如果当前播放的是start.mp3或是自定义引导语
+      if ((selectedGuidance?.id === 'custom-guidance' ||
+        guidanceAudio.src.includes('start.mp3') ||
+        (selectedGuidance?.audioUrl && selectedGuidance.audioUrl.includes('start.mp3')))) {
+
+        console.log('[调试] 设置引导语音频播放结束后的回调，将播放自定义音频');
+
+        // 添加新的ended事件处理器
+        guidanceAudio.onended = function () {
+          console.log('[调试] useEffect中设置的事件：引导语音频播放结束，播放自定义音频');
+
+          // 如果已经播放过自定义音频，不再重复播放
+          if (hasPlayedCustomAudioRef.current) {
+            console.log('[调试] 自定义音频已经播放过，不再重复播放');
+            return;
+          }
+
+          // 直接修改现有引导语音频的src，而不是创建新对象
+          if (guidanceAudio) {
+            guidanceAudio.src = customAudioUrl;
+            guidanceAudio.volume = isMuted ? 0 : volume / 100;
+
+            // 播放自定义音频
+            guidanceAudio.play().then(() => {
+              console.log('[调试] 自定义音频开始播放成功 (从useEffect中)');
+              hasPlayedCustomAudioRef.current = true;
+            }).catch(error => {
+              console.error('[调试] 播放自定义音频失败 (从useEffect中):', error);
+              toast.error('播放自定义音频失败，请重试');
+            });
+          }
+        };
+      }
+    }
+  }, [customAudioUrl, guidanceAudio, selectedGuidance, isMuted, volume]);
 
   return (
     <div className={`min-h-screen ${bgGradient} ${textColor} flex flex-col`}>
@@ -1236,8 +1284,7 @@ export default function MeditationPage() {
               t={t}
               onCloseDialog={() => setShowGuidanceDialog(false)}
               onPlay={togglePlayPause}
-              onCustomAudioGenerated={handleCustomAudioGenerated}
-            />
+              onCustomAudioGenerated={handleCustomAudioGenerated} guidanceHistory={[]} showHistory={false} />
           </div>
         </DialogContent>
       </Dialog>

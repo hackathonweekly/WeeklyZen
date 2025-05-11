@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { BookOpen, ChevronRight, VolumeX, Volume2, Plus, ChevronDown } from 'lucide-react';
+import { BookOpen, ChevronRight, VolumeX, Volume2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { CustomGuidance } from './CustomGuidance';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -29,6 +29,8 @@ interface GuidanceSelectorProps {
   customAudioUrl?: string;
   volume?: number;
   isMuted?: boolean;
+  guidanceHistory: GuidanceType[];
+  showHistory: boolean;
 }
 
 // 创建"无引导语"选项
@@ -48,6 +50,11 @@ const createCustomGuidanceOption = (t: (zh: string, en: string) => string): Guid
   paragraphs: [],
   content: <></>,
 });
+
+// 历史记录最大数量，限制为3条
+// 注意：此常量与CustomGuidance.tsx中的MAX_HISTORY=3保持一致
+// 确保用户只能看到最新的3条历史记录，减少本地存储空间占用
+const MAX_HISTORY_COUNT = 3;
 
 // 音频资源映射
 const guidanceAudioMap: Record<string, string> = {
@@ -69,7 +76,9 @@ export function GuidanceSelector({
   onCustomAudioGenerated,
   customAudioUrl,
   volume = 100,
-  isMuted = false
+  isMuted = false,
+  guidanceHistory,
+  showHistory
 }: GuidanceSelectorProps) {
   const [showCustom, setShowCustom] = useState(true);
   const [guidanceAudio, setGuidanceAudio] = useState<HTMLAudioElement | null>(null);
@@ -325,6 +334,45 @@ export function GuidanceSelector({
             <ChevronRight size={16} className="flex-shrink-0 ml-2" />
           </Button>
         ))}
+
+        {/* 历史记录按钮 */}
+        <Button
+          variant="outline"
+          className={cn(
+            "flex justify-between items-center p-3 h-auto text-left",
+            selectedGuidance?.id === 'history'
+              ? isDarkTheme
+                ? 'bg-indigo-800/30 border-indigo-600'
+                : 'bg-blue-100 border-blue-400'
+              : isDarkTheme
+                ? 'border-indigo-800/30 hover:bg-indigo-900/50'
+                : 'border-blue-200 hover:bg-blue-50'
+          )}
+          onClick={() => handleGuidanceSelect({
+            id: 'history',
+            title: '历史记录',
+            description: '',
+            paragraphs: [],
+            content: <></>,
+            audioUrl: null
+          })}
+        >
+          <div className="flex items-center">
+            {showHistory
+              ? <ChevronUp className="ml-0 md:ml-1 h-3 w-3" />
+              : <ChevronDown className="ml-0 md:ml-1 h-3 w-3" />}
+            <div>
+              <div className="font-medium">历史记录</div>
+            </div>
+          </div>
+        </Button>
+
+        {/* 显示历史记录数量的小提示 */}
+        {guidanceHistory && guidanceHistory.length > 0 && (
+          <div className="text-xs opacity-60 ml-2">
+            {t(`${guidanceHistory.length}/${MAX_HISTORY_COUNT}条记录`, `${guidanceHistory.length}/${MAX_HISTORY_COUNT} records`)}
+          </div>
+        )}
       </div>
     </div>
   );

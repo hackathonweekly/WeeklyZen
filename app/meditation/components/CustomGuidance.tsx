@@ -43,7 +43,22 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
     const [showHistory, setShowHistory] = useState(false);
 
     const MAX_CHARS = 300;
-    const MAX_HISTORY = 10;
+    const MAX_HISTORY = 3;
+
+    // 判断音频是否过期（只基于时间判断，不再检查URL有效性）
+    const isAudioExpired = (audioUrl: string | null, timestamp: number): boolean => {
+        // 只检查时间是否超过24小时（一天）
+        const now = Date.now();
+        const oneDayInMs = 24 * 60 * 60 * 1000; // 24小时（一天）的毫秒数
+        const isExpiredByTime = (now - timestamp) > oneDayInMs;
+
+        if (isExpiredByTime) {
+            console.log('[历史记录] 音频存储时间超过一天，标记为过期:', new Date(timestamp).toLocaleString());
+            return true;
+        }
+
+        return false;
+    };
 
     // 加载历史记录
     useEffect(() => {
@@ -54,23 +69,43 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                     // 解析保存的历史记录
                     const parsedHistory = JSON.parse(savedHistory);
 
-                    // 处理旧版本数据，为每条记录添加isAudioExpired字段并严格检查URL有效性
-                    const updatedHistory = parsedHistory.map((item: GuidanceHistoryItem) => {
-                        // 检查URL是否有效（不为空且格式正确）
-                        const isValidUrl = item.audioUrl &&
-                            item.audioUrl.trim() !== "" &&
-                            (item.audioUrl.startsWith('http://') ||
-                                item.audioUrl.startsWith('https://'));
+                    // 检查是否超出限制
+                    if (parsedHistory.length > MAX_HISTORY) {
+                        console.log(`[历史记录] 加载到${parsedHistory.length}条记录，超出${MAX_HISTORY}条限制，将截断`);
+                    }
 
-                        // 更新或设置isAudioExpired标记
-                        item.isAudioExpired = !isValidUrl;
+                    // 处理历史记录，仅基于时间判断过期状态
+                    const updatedHistory = parsedHistory.map((item: GuidanceHistoryItem) => {
+                        // 基于时间判断是否过期
+                        const expired = isAudioExpired(item.audioUrl, item.timestamp);
+
+                        // 更新或设置过期标志
+                        item.isAudioExpired = expired;
+
+                        // 记录日志
+                        if (expired) {
+                            console.log('[历史记录] 检测到音频存储时间超过一天，标记为过期:',
+                                new Date(item.timestamp).toLocaleString());
+                        }
 
                         return item;
                     });
 
-                    setGuidanceHistory(updatedHistory);
-                    console.log('[历史记录] 成功加载历史记录并处理旧版本数据，有效音频数:',
-                        updatedHistory.filter((i: GuidanceHistoryItem) => !i.isAudioExpired).length);
+                    // 确保只保留最新的MAX_HISTORY条记录
+                    const limitedHistory = updatedHistory.slice(0, MAX_HISTORY);
+
+                    // 如果需要截断记录，重新保存到localStorage
+                    if (updatedHistory.length > MAX_HISTORY) {
+                        const removedCount = updatedHistory.length - MAX_HISTORY;
+                        console.log(`[历史记录] 历史记录超出${MAX_HISTORY}条限制，已删除${removedCount}条最旧记录`);
+
+                        // 更新localStorage，确保持久化的数据也符合MAX_HISTORY限制
+                        localStorage.setItem('guidanceHistory', JSON.stringify(limitedHistory));
+                    }
+
+                    setGuidanceHistory(limitedHistory);
+                    console.log('[历史记录] 成功加载历史记录，有效音频数:',
+                        limitedHistory.filter((i: GuidanceHistoryItem) => !i.isAudioExpired).length);
                 }
             } catch (e) {
                 console.error('Failed to load guidance history:', e);
@@ -85,33 +120,53 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
     // 保存历史记录
     const saveToHistory = (prompt: string, audioUrl: string | null) => {
         try {
-            // 使用更严格的URL有效性检查
-            const isValidUrl = audioUrl &&
-                audioUrl.trim() !== "" &&
-                (audioUrl.startsWith('http://') ||
-                    audioUrl.startsWith('https://'));
+            const timestamp = Date.now();
 
-            // 如果音频URL无效，设置为过期状态
-            const isAudioExpired = !isValidUrl;
+            // 使用isAudioExpired函数判断音频是否过期（仅基于时间）
+            // 新添加的记录不会过期，因为时间戳是当前时间
+            const expired = false; // 新记录不会过期
 
             const newItem: GuidanceHistoryItem = {
                 id: uuidv4(),
-                timestamp: Date.now(),
+                timestamp: timestamp,
                 prompt,
                 audioUrl: audioUrl || "", // 存储空字符串而不是null
-                isAudioExpired // 添加过期标记
+                isAudioExpired: expired // 添加过期标记
             };
 
-            // 创建新历史数组
-            const updatedHistory = [newItem, ...guidanceHistory].slice(0, MAX_HISTORY);
+            // 首先尝试从localStorage获取现有历史记录
+            let existingHistory: GuidanceHistoryItem[] = [];
+            try {
+                const savedHistory = localStorage.getItem('guidanceHistory');
+                if (savedHistory) {
+                    existingHistory = JSON.parse(savedHistory);
+                }
+            } catch (e) {
+                console.error('[历史记录] 读取现有历史记录失败:', e);
+                // 如果读取失败，使用内存中的历史记录
+                existingHistory = [...guidanceHistory];
+            }
+
+            // 添加新记录到历史的开头
+            const updatedHistory = [newItem, ...existingHistory];
+
+            // 如果历史记录超过最大数量，删除最旧的记录
+            // 确保只保留最新的MAX_HISTORY条记录
+            const limitedHistory = updatedHistory.slice(0, MAX_HISTORY);
+
+            // 如果历史记录超出MAX_HISTORY，记录被移除的记录数量
+            if (updatedHistory.length > MAX_HISTORY) {
+                const removedCount = updatedHistory.length - MAX_HISTORY;
+                console.log(`[历史记录] 历史记录超出${MAX_HISTORY}条限制，已删除${removedCount}条最旧记录`);
+            }
 
             // 更新状态
-            setGuidanceHistory(updatedHistory);
+            setGuidanceHistory(limitedHistory);
 
             // 保存到localStorage
-            localStorage.setItem('guidanceHistory', JSON.stringify(updatedHistory));
+            localStorage.setItem('guidanceHistory', JSON.stringify(limitedHistory));
 
-            console.log('[历史记录] 已保存新引导语到历史记录', isAudioExpired ? '(标记为音频过期)' : '');
+            console.log('[历史记录] 已保存新引导语到历史记录，音频URL:', audioUrl || '无音频');
         } catch (e) {
             console.error('Failed to save to guidance history:', e);
             // 错误处理 - 可以显示toast或简单忽略
@@ -126,16 +181,20 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
 
     // 处理历史记录选择
     const handleHistorySelect = (item: GuidanceHistoryItem) => {
-        // 检查音频是否过期
-        if (item.isAudioExpired || !item.audioUrl) {
+        // 使用isAudioExpired函数重新检查是否过期（只考虑时间因素）
+        const expired = isAudioExpired(item.audioUrl, item.timestamp);
+
+        // 如果过期了，显示提示并阻止选择
+        if (expired) {
             toast.error(t("音频已过期", "Audio has expired"), {
-                description: t("此引导语的音频已不可用，请重新生成", "This guidance audio is no longer available, please regenerate")
+                description: t("此引导语的音频已存储超过一天，请重新生成",
+                    "This guidance audio was stored over 24 hours ago, please regenerate")
             });
             return; // 阻止选择过期的音频
         }
 
         if (onCustomAudioGenerated) {
-            console.log('[历史记录] 选择历史音频:', item.audioUrl);
+            console.log('[历史记录] 选择历史音频');
             onCustomAudioGenerated(item.audioUrl);
 
             toast(t("已选择历史音频", "Historical audio selected"), {
@@ -620,54 +679,80 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
 
                     {showHistory && (
                         <div className={`p-4 rounded-lg ${isDarkTheme ? 'bg-indigo-950/50 border border-indigo-900/70' : 'bg-blue-50 border border-blue-100'}`}>
+                            <div className="mb-2 text-xs opacity-70">
+                                {t(`仅显示最新的${MAX_HISTORY}条历史记录`, `Showing only the latest ${MAX_HISTORY} records`)}
+                            </div>
                             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-2">
-                                {guidanceHistory.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${item.isAudioExpired
-                                            ? isDarkTheme
-                                                ? 'bg-gray-800/60 border-gray-700 opacity-60'
-                                                : 'bg-gray-100 border-gray-200 opacity-70'
-                                            : isDarkTheme
-                                                ? 'bg-indigo-900/40 border border-indigo-800/80 hover:bg-indigo-900/60'
-                                                : 'bg-white border border-blue-100 hover:bg-blue-50'
-                                            }`}
-                                        onClick={() => handleHistorySelect(item)}
-                                    >
-                                        <div className="flex justify-between">
-                                            <div className={`text-xs ${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'}`}>
-                                                {formatTimestamp(item.timestamp)}
-                                            </div>
-                                            {item.isAudioExpired && (
-                                                <div className={`text-xs px-1.5 py-0.5 rounded ${isDarkTheme
-                                                    ? 'bg-red-950 text-red-300 border border-red-800/50'
-                                                    : 'bg-red-50 text-red-600 border border-red-200'
-                                                    }`}>
-                                                    {t("音频已过期", "Audio expired")}
+                                {guidanceHistory.map((item) => {
+                                    // 只使用isAudioExpired函数基于时间判断音频是否可用
+                                    const expired = isAudioExpired(item.audioUrl, item.timestamp);
+                                    const isAudioAvailable = !expired;
+
+                                    // 计算音频还有多长时间过期
+                                    const now = Date.now();
+                                    const oneDayInMs = 24 * 60 * 60 * 1000;
+                                    const timeLeftMs = Math.max(0, (item.timestamp + oneDayInMs) - now);
+                                    const hoursLeft = Math.floor(timeLeftMs / (60 * 60 * 1000));
+
+                                    // 格式化剩余时间
+                                    let timeLeftText = "";
+                                    if (isAudioAvailable) {
+                                        timeLeftText = t(`剩余${hoursLeft}小时`, `${hoursLeft}h left`);
+                                    }
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${!isAudioAvailable
+                                                ? isDarkTheme
+                                                    ? 'bg-gray-800/60 border-gray-700 opacity-60'
+                                                    : 'bg-gray-100 border-gray-200 opacity-70'
+                                                : isDarkTheme
+                                                    ? 'bg-indigo-900/40 border border-indigo-800/80 hover:bg-indigo-900/60'
+                                                    : 'bg-white border border-blue-100 hover:bg-blue-50'
+                                                }`}
+                                            onClick={() => handleHistorySelect(item)}
+                                        >
+                                            <div className="flex justify-between">
+                                                <div className={`text-xs ${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'}`}>
+                                                    {formatTimestamp(item.timestamp)}
+                                                    {timeLeftText && (
+                                                        <span className={`ml-2 ${hoursLeft < 6 ? 'text-amber-500' : ''}`}>
+                                                            ({timeLeftText})
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className={`mt-1 text-sm line-clamp-2 ${item.isAudioExpired
-                                            ? isDarkTheme ? 'text-gray-400' : 'text-gray-500'
-                                            : isDarkTheme ? 'text-indigo-200' : 'text-slate-700'
-                                            }`}>
-                                            {item.prompt}
-                                        </div>
-                                        <div className="mt-2 flex justify-between items-center">
-                                            <div className={`flex items-center gap-1 text-xs ${item.isAudioExpired
-                                                ? isDarkTheme ? 'text-gray-500' : 'text-gray-500'
-                                                : isDarkTheme ? 'text-indigo-400' : 'text-blue-500'
+                                                {!isAudioAvailable && (
+                                                    <div className={`text-xs px-1.5 py-0.5 rounded ${isDarkTheme
+                                                        ? 'bg-red-950 text-red-300 border border-red-800/50'
+                                                        : 'bg-red-50 text-red-600 border border-red-200'
+                                                        }`}>
+                                                        {t("音频已过期", "Audio expired")}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={`mt-1 text-sm line-clamp-2 ${!isAudioAvailable
+                                                ? isDarkTheme ? 'text-gray-400' : 'text-gray-500'
+                                                : isDarkTheme ? 'text-indigo-200' : 'text-slate-700'
                                                 }`}>
-                                                {!item.isAudioExpired && <Play size={14} />}
-                                                <span>
-                                                    {item.isAudioExpired
-                                                        ? t("无法播放", "Cannot play")
-                                                        : t("点击播放", "Click to play")}
-                                                </span>
+                                                {item.prompt}
+                                            </div>
+                                            <div className="mt-2 flex justify-between items-center">
+                                                <div className={`flex items-center gap-1 text-xs ${!isAudioAvailable
+                                                    ? isDarkTheme ? 'text-gray-500' : 'text-gray-500'
+                                                    : isDarkTheme ? 'text-indigo-400' : 'text-blue-500'
+                                                    }`}>
+                                                    {isAudioAvailable && <Play size={14} />}
+                                                    <span>
+                                                        {!isAudioAvailable
+                                                            ? t("已过期", "Expired")
+                                                            : t("点击播放", "Click to play")}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

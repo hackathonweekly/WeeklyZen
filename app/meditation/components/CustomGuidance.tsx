@@ -15,6 +15,7 @@ interface GuidanceHistoryItem {
     timestamp: number;
     prompt: string;
     audioUrl: string;
+    isAudioExpired?: boolean;
 }
 
 interface CustomGuidanceProps {
@@ -50,7 +51,26 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             try {
                 const savedHistory = localStorage.getItem('guidanceHistory');
                 if (savedHistory) {
-                    setGuidanceHistory(JSON.parse(savedHistory));
+                    // 解析保存的历史记录
+                    const parsedHistory = JSON.parse(savedHistory);
+
+                    // 处理旧版本数据，为每条记录添加isAudioExpired字段并严格检查URL有效性
+                    const updatedHistory = parsedHistory.map((item: GuidanceHistoryItem) => {
+                        // 检查URL是否有效（不为空且格式正确）
+                        const isValidUrl = item.audioUrl &&
+                            item.audioUrl.trim() !== "" &&
+                            (item.audioUrl.startsWith('http://') ||
+                                item.audioUrl.startsWith('https://'));
+
+                        // 更新或设置isAudioExpired标记
+                        item.isAudioExpired = !isValidUrl;
+
+                        return item;
+                    });
+
+                    setGuidanceHistory(updatedHistory);
+                    console.log('[历史记录] 成功加载历史记录并处理旧版本数据，有效音频数:',
+                        updatedHistory.filter((i: GuidanceHistoryItem) => !i.isAudioExpired).length);
                 }
             } catch (e) {
                 console.error('Failed to load guidance history:', e);
@@ -63,13 +83,23 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
     }, []);
 
     // 保存历史记录
-    const saveToHistory = (prompt: string, audioUrl: string) => {
+    const saveToHistory = (prompt: string, audioUrl: string | null) => {
         try {
+            // 使用更严格的URL有效性检查
+            const isValidUrl = audioUrl &&
+                audioUrl.trim() !== "" &&
+                (audioUrl.startsWith('http://') ||
+                    audioUrl.startsWith('https://'));
+
+            // 如果音频URL无效，设置为过期状态
+            const isAudioExpired = !isValidUrl;
+
             const newItem: GuidanceHistoryItem = {
                 id: uuidv4(),
                 timestamp: Date.now(),
                 prompt,
-                audioUrl
+                audioUrl: audioUrl || "", // 存储空字符串而不是null
+                isAudioExpired // 添加过期标记
             };
 
             // 创建新历史数组
@@ -81,7 +111,7 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             // 保存到localStorage
             localStorage.setItem('guidanceHistory', JSON.stringify(updatedHistory));
 
-            console.log('[历史记录] 已保存新引导语到历史记录');
+            console.log('[历史记录] 已保存新引导语到历史记录', isAudioExpired ? '(标记为音频过期)' : '');
         } catch (e) {
             console.error('Failed to save to guidance history:', e);
             // 错误处理 - 可以显示toast或简单忽略
@@ -96,6 +126,14 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
 
     // 处理历史记录选择
     const handleHistorySelect = (item: GuidanceHistoryItem) => {
+        // 检查音频是否过期
+        if (item.isAudioExpired || !item.audioUrl) {
+            toast.error(t("音频已过期", "Audio has expired"), {
+                description: t("此引导语的音频已不可用，请重新生成", "This guidance audio is no longer available, please regenerate")
+            });
+            return; // 阻止选择过期的音频
+        }
+
         if (onCustomAudioGenerated) {
             console.log('[历史记录] 选择历史音频:', item.audioUrl);
             onCustomAudioGenerated(item.audioUrl);
@@ -202,19 +240,17 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 ? `测试引导语 - ${timestamp}`
                 : `${userInput} (${timestamp})`;
 
-            // 先使用默认音频URL，确保一定会有记录保存
-            const defaultAudioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
-
             // 立即保存到历史记录，不等待音频生成
             console.log("[历史记录] 立即保存引导语到历史记录，时间:", timestamp);
-            saveToHistory(historyPrompt, defaultAudioUrl);
+            saveToHistory(historyPrompt, null);
 
             // 尝试调用豆包 TTS API 生成音频
             try {
                 if (isTestMode) {
                     // 测试模式使用预设的音频URL
                     console.log("[引导语生成] 测试模式：使用预设音频URL");
-                    audioUrl = defaultAudioUrl; // 使用前面定义的默认URL
+                    // 使用有效的测试音频URL
+                    audioUrl = "https://objectstorageapi.gzg.sealos.run/e36y8btp-weeklyzen/audio/ai-sounds/start.mp3";
                 } else {
                     // 正常模式调用API生成音频
                     console.log("[引导语生成] 开始调用豆包 TTS API");
@@ -228,7 +264,10 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                         console.log("[历史记录] 更新历史记录中的音频URL");
                         saveToHistory(historyPrompt, generatedAudioUrl);
                     } else {
-                        audioUrl = defaultAudioUrl; // 如果没有生成新URL，使用默认URL
+                        // 如果没有生成新URL，标记为过期
+                        console.log("[引导语生成] 音频URL生成失败，标记为过期");
+                        audioUrl = null;
+                        saveToHistory(historyPrompt, null);
                     }
                 }
             } catch (e) {
@@ -236,13 +275,18 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
                 console.error("[引导语生成] 豆包 TTS API 调用失败:", error);
                 audioError = true;
                 audioErrorMessage = error.message || "Unknown error";
-                audioUrl = defaultAudioUrl; // 发生错误时使用默认URL
+                // 更新历史记录，标记音频已过期
+                console.log("[历史记录] 更新历史记录，标记音频已过期");
+                saveToHistory(historyPrompt, null);
+                audioUrl = null; // 设置为null，表示没有可用音频
             }
 
             // 回调 - 添加非空检查
             if (onCustomAudioGenerated) {
-                console.log("[引导语生成] 调用onCustomAudioGenerated，传递音频URL:", audioUrl);
-                onCustomAudioGenerated(audioUrl);
+                // 如果audioUrl为null，转换为undefined
+                const audioUrlForCallback = audioUrl === null ? undefined : audioUrl;
+                console.log("[引导语生成] 调用onCustomAudioGenerated，传递音频URL:", audioUrlForCallback || "undefined");
+                onCustomAudioGenerated(audioUrlForCallback);
             } else {
                 console.log("[引导语生成] onCustomAudioGenerated未定义，跳过回调");
             }
@@ -561,69 +605,74 @@ export function CustomGuidance({ onGuidanceCreated, onCustomAudioGenerated, isDa
             </div>
 
             {/* 历史记录区域 */}
-            {
-                showHistory && (
-                    <div className={`mt-4 rounded-lg border ${isDarkTheme
-                        ? 'border-indigo-800 bg-indigo-900/30'
-                        : 'border-blue-200 bg-blue-50'}`}>
-                        <div className={`p-3 border-b ${isDarkTheme
-                            ? 'border-indigo-800 bg-indigo-800/50 text-indigo-200'
-                            : 'border-blue-200 bg-blue-100 text-blue-700'} flex items-center`}>
-                            <Clock className="h-4 w-4 mr-2" />
-                            <span className="font-medium">
-                                {t("历史引导语", "History Guidance")}
-                            </span>
-                            <span className="text-xs ml-2 opacity-70">
-                                ({guidanceHistory.length}/10)
-                            </span>
+            {guidanceHistory.length > 0 && (
+                <div className="mt-6">
+                    {/* <div
+                        className={`flex items-center gap-2 ${isDarkTheme ? 'text-indigo-300' : 'text-blue-600'} cursor-pointer mb-2`}
+                        onClick={() => setShowHistory(!showHistory)}
+                    >
+                        <History size={16} />
+                        <div className="flex items-center gap-1">
+                            <span>{t("历史记录", "History")}</span>
+                            {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
+                    </div> */}
 
-                        {guidanceHistory.length === 0 ? (
-                            <div className={`p-6 text-center ${isDarkTheme
-                                ? 'text-indigo-400'
-                                : 'text-blue-500'}`}>
-                                {t("暂无历史记录", "No history records yet")}
-                            </div>
-                        ) : (
-                            <div className="max-h-[300px] overflow-y-auto">
-                                {guidanceHistory.map((item, index) => (
-                                    <div key={item.id} className={`p-3 flex flex-col ${index !== guidanceHistory.length - 1
-                                        ? isDarkTheme
-                                            ? 'border-b border-indigo-800/50'
-                                            : 'border-b border-blue-200'
-                                        : ''}`}>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-xs ${isDarkTheme
-                                                ? 'text-indigo-400'
-                                                : 'text-blue-600'}`}>
+                    {showHistory && (
+                        <div className={`p-4 rounded-lg ${isDarkTheme ? 'bg-indigo-950/50 border border-indigo-900/70' : 'bg-blue-50 border border-blue-100'}`}>
+                            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-2">
+                                {guidanceHistory.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${item.isAudioExpired
+                                            ? isDarkTheme
+                                                ? 'bg-gray-800/60 border-gray-700 opacity-60'
+                                                : 'bg-gray-100 border-gray-200 opacity-70'
+                                            : isDarkTheme
+                                                ? 'bg-indigo-900/40 border border-indigo-800/80 hover:bg-indigo-900/60'
+                                                : 'bg-white border border-blue-100 hover:bg-blue-50'
+                                            }`}
+                                        onClick={() => handleHistorySelect(item)}
+                                    >
+                                        <div className="flex justify-between">
+                                            <div className={`text-xs ${isDarkTheme ? 'text-indigo-400' : 'text-blue-500'}`}>
                                                 {formatTimestamp(item.timestamp)}
-                                            </span>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => handleHistorySelect(item)}
-                                                className={`h-7 px-2 ${isDarkTheme
-                                                    ? 'hover:bg-indigo-800/70 text-indigo-300'
-                                                    : 'hover:bg-blue-100 text-blue-600'}`}
-                                            >
-                                                <Play className="h-3 w-3 mr-1" />
-                                                {t("播放", "Play")}
-                                            </Button>
+                                            </div>
+                                            {item.isAudioExpired && (
+                                                <div className={`text-xs px-1.5 py-0.5 rounded ${isDarkTheme
+                                                    ? 'bg-red-950 text-red-300 border border-red-800/50'
+                                                    : 'bg-red-50 text-red-600 border border-red-200'
+                                                    }`}>
+                                                    {t("音频已过期", "Audio expired")}
+                                                </div>
+                                            )}
                                         </div>
-                                        <p className={`text-sm line-clamp-2 ${isDarkTheme
-                                            ? 'text-indigo-200'
-                                            : 'text-blue-800'}`}>
-                                            {item.prompt.length > 30
-                                                ? item.prompt.substring(0, 30) + '...'
-                                                : item.prompt}
-                                        </p>
+                                        <div className={`mt-1 text-sm line-clamp-2 ${item.isAudioExpired
+                                            ? isDarkTheme ? 'text-gray-400' : 'text-gray-500'
+                                            : isDarkTheme ? 'text-indigo-200' : 'text-slate-700'
+                                            }`}>
+                                            {item.prompt}
+                                        </div>
+                                        <div className="mt-2 flex justify-between items-center">
+                                            <div className={`flex items-center gap-1 text-xs ${item.isAudioExpired
+                                                ? isDarkTheme ? 'text-gray-500' : 'text-gray-500'
+                                                : isDarkTheme ? 'text-indigo-400' : 'text-blue-500'
+                                                }`}>
+                                                {!item.isAudioExpired && <Play size={14} />}
+                                                <span>
+                                                    {item.isAudioExpired
+                                                        ? t("无法播放", "Cannot play")
+                                                        : t("点击播放", "Click to play")}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                )
-            }
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 } 

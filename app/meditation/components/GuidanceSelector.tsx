@@ -100,12 +100,12 @@ export function GuidanceSelector({
             // 保存音频引用以便控制
             setGuidanceAudio(customAudio);
             // 播放音频
-            // customAudio.play().then(() => {
-            //   console.log('[调试] 自定义音频开始播放成功');
-            // }).catch(error => {
-            //   console.error('[调试] 播放自定义音频失败:', error);
-            //   toast.error('播放自定义音频失败，请重试');
-            // });
+            customAudio.play().then(() => {
+              console.log('[调试] 自定义音频开始播放成功');
+            }).catch(error => {
+              console.error('[调试] 播放自定义音频失败:', error);
+              toast.error('播放自定义音频失败，请重试');
+            });
           }
         }
       };

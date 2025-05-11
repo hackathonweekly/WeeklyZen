@@ -75,16 +75,19 @@ export function SiteHeader({ scrolled = false }: SiteHeaderProps) {
             <ThemeToggle />
           </div>
 
-          {/* 仅在桌面版显示登录按钮/用户头像 */}
+          {/* 仅在桌面版显示登录按钮/用户头像 - 临时隐藏微信登录按钮 */}
           <div className="hidden md:block">
             {user ? (
               <UserAvatarMenu />
             ) : (
+              /* 微信登录按钮暂时隐藏 
               <WechatLogin
                 buttonVariant="outline"
                 buttonSize="sm"
                 onLoginSuccess={(userInfo) => setUser(userInfo)}
               />
+              */
+              <span></span> // 空元素替代，保持布局
             )}
           </div>
         </div>
